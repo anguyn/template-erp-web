@@ -473,11 +473,11 @@ const CreateGoodsReceipt = () => {
             </div>
             <FeatureBar style={{ width: `${containerWidth}px`, maxWidth: `${containerWidth}px` }} className={`!max-w-[${containerWidth}px] !w-[${containerWidth}px]`} />
             <ItemList itemSelectModalOpen={itemSelectModalOpen} setItemSelectModalOpen={(value) => setItemSelectModalOpen(value)} itemList={itemList} selectedItemRow={selectedItemRow?.Item} setItem={handleSetItem} />
-            <Dialog header="Delete items" visible={visible} position={position} style={{ width: '50vw' }} onHide={() => setVisible(false)} footer={footerContent} draggable={false} resizable={false}>
+            {/* <Dialog header="Delete items" visible={visible} position={position} style={{ width: '50vw' }} onHide={() => setVisible(false)} footer={footerContent} draggable={false} resizable={false}>
                 <h5 className="m-0">
                     Are you sure want to delete {selectedContentRow} items? This action cannot be reverted.
                 </h5>
-            </Dialog>
+            </Dialog> */}
         </>
     );
 };
