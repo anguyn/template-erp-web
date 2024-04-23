@@ -1,14 +1,17 @@
+import React, { forwardRef, useContext, useImperativeHandle, useRef } from 'react';
 import Link from 'next/link';
 import { Menu } from 'primereact/menu';
 import Router, { useRouter } from 'next/router';
 import { classNames } from 'primereact/utils';
-import React, { forwardRef, useContext, useImperativeHandle, useRef } from 'react';
 import usersApi from '@/service/ServiceLayer/authApi';
 import { useLayoutStore } from '@/stores/layoutStore';
 import { shallow } from 'zustand/shallow';
 
 const AppTopbar = forwardRef((props, ref) => {
-    const { layoutState, layoutConfig, onMenuToggle, showProfileSidebar } = useLayoutStore((state) => state, shallow);
+    const { layoutState, layoutConfig, onMenuToggle, showProfileSidebar } = useLayoutStore(
+        (state) => state,
+        shallow
+    );
 
     const menubuttonRef = useRef(null);
     const topbarmenuRef = useRef(null);
@@ -60,7 +63,7 @@ const AppTopbar = forwardRef((props, ref) => {
         <div className="layout-topbar">
             <Link href="/" className="layout-topbar-logo items-center justify-center">
                 <img
-                    src={`/images/grant-thornton-logo.png`}
+                    src={`/images/grant-thornton-${layoutConfig.colorScheme !== 'light' ? 'dark' : 'white'}-logo.png`}
                     alt="Grant Thornton Logo"
                     className={`flex-shrink-0 self-center`}
                 />

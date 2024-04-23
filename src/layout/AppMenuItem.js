@@ -5,6 +5,7 @@ import { Ripple } from 'primereact/ripple';
 import { classNames } from 'primereact/utils';
 import { CSSTransition } from 'react-transition-group';
 import { MenuContext } from './context/menucontext';
+import { Icon } from '@iconify/react';
 // Tại sao chỗ này lại lỗi ta???
 // import { useMenuStore } from '@/stores/menuStore';
 
@@ -92,7 +93,19 @@ const AppMenuItem = (props) => {
                     target={item.target}
                     tabIndex="0"
                 >
-                    <i className={classNames('layout-menuitem-icon', item.icon)}></i>
+                    {item.icon && (
+                        <>
+                            {' '}
+                            <i className={classNames('layout-menuitem-icon', item.icon)}></i>{' '}
+                        </>
+                    )}
+                    {item.iconify && (
+                        <div className="layout-menuitem-icon">
+                            {' '}
+                            <Icon icon={item.iconify} />{' '}
+                        </div>
+                    )}
+                    {/* <i className={classNames('layout-menuitem-icon', item.icon)}></i> */}
                     <span className="layout-menuitem-text">{item.label}</span>
                     {item.items && (
                         <i className="pi pi-fw pi-angle-down layout-submenu-toggler"></i>
@@ -112,7 +125,19 @@ const AppMenuItem = (props) => {
                     })}
                     tabIndex={0}
                 >
-                    <i className={classNames('layout-menuitem-icon', item.icon)}></i>
+                    {item.icon && (
+                        <>
+                            {' '}
+                            <i className={classNames('layout-menuitem-icon', item.icon)}></i>{' '}
+                        </>
+                    )}
+                    {item.iconify && (
+                        <div className="layout-menuitem-icon">
+                            {' '}
+                            <Icon icon={item.iconify} />{' '}
+                        </div>
+                    )}
+                    {/* <i className={classNames('layout-menuitem-icon', item.icon)}></i> */}
                     <span className="layout-menuitem-text">{item.label}</span>
                     {item.items && (
                         <i className="pi pi-fw pi-angle-down layout-submenu-toggler"></i>

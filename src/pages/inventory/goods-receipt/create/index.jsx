@@ -152,7 +152,7 @@ const CreateGoodsReceipt = () => {
         const handleEditItemNo = (e) => {
             setContentData(prev => (prev.map(content => ({ ...content, ItemNo: e.target.value }))));
         }
-        return <div className="p-inputtext p-component p-0 flex justify-between items-center border-r-0">
+        return <div className="p-inputtext p-inputtext-sm p-component p-0 flex justify-between items-center border-r-0">
             <div className="p-2">
                 <p className={`truncate`}>{product.ItemNo && product.ItemNo}
                     {product.Item.name && " - " + product.Item.name}</p>
@@ -163,51 +163,79 @@ const CreateGoodsReceipt = () => {
 
     const ItemDescriptionTemplate = (product) => {
         const handleEditItemDescription = (e) => {
-            setContentData(prev => (prev.map(content => ({ ...content, ItemDescription: e.target.value }))));
+            setContentData(prev => (prev.map(content => {
+                if (content.id == product.id) {
+                    return { ...content, ItemDescription: e.target.value }
+                } else return content
+            })));
         }
         return <InputText className="w-full p-inputtext-sm" value={product.ItemDescription} onChange={handleEditItemDescription} />;
     };
 
     const ItemQuantityTemplate = (product) => {
         const handleEditItemQuantity = (e) => {
-            setContentData(prev => (prev.map(content => ({ ...content, Quantity: e.target.value }))));
+            setContentData(prev => (prev.map(content => {
+                if (content.id == product.id) {
+                    return { ...content, Quantity: e.target.value }
+                } else return content;
+            })));
         }
         return <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" min={1} showButtons value={product.Quantity} onValueChange={handleEditItemQuantity} />
     };
 
     const ItemDiscountPercentTemplate = (product) => {
         const handleEditItemDiscountPercent = (e) => {
-            setContentData(prev => (prev.map(content => ({ ...content, DiscountPercent: e.target.value }))));
+            setContentData(prev => (prev.map(content => {
+                if (content.id == product.id)
+                    return { ...content, DiscountPercent: e.target.value }
+                else return content
+            })));
         }
         return <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" min={0} suffix="%" value={product.DiscountPercent} onValueChange={handleEditItemDiscountPercent} />
     };
 
     const ItemPriceAfterDiscountTemplate = (product) => {
         const handleEditItemPriceAfterDiscount = (e) => {
-            setContentData(prev => (prev.map(content => ({ ...content, PriceAfterDiscount: e.target.value }))));
+            setContentData(prev => (prev.map(content => {
+                if (content.id == product.id)
+                    return { ...content, PriceAfterDiscount: e.target.value }
+                else return content
+            })));
         }
         return <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" min={1} value={product.PriceAfterDiscount} onValueChange={handleEditItemPriceAfterDiscount} />
     };
 
     const ItemTotalTemplate = (product) => {
         const handleEditItemTotal = (e) => {
-            setContentData(prev => (prev.map(content => ({ ...content, Total: e.target.value }))));
+            setContentData(prev => (prev.map(content => {
+                if (content.id == product.id)
+                    return { ...content, Total: e.target.value }
+                else return content
+            })));
         }
         return <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" min={1} value={product.Total} onValueChange={handleEditItemTotal} />
     };
 
     const ItemWarehouseTemplate = (product) => {
         const handleEditItemWarehouse = (e) => {
-            setContentData(prev => (contentData.map(content => ({ ...content, Warehouse: e.target.value }))));
+            setContentData(prev => (contentData.map(content => {
+                if (content.id == product.id)
+                    return { ...content, Warehouse: e.target.value }
+                else return content;
+            })));
         }
         return (
-            <Dropdown
-                value={product.Warehouse}
-                options={warehouseOptions}
-                onChange={handleEditItemWarehouse}
-                placeholder="Select a warehouse"
-                className="p-inputtext-sm w-full"
-            />
+            <>
+                <Dropdown
+                    value={product.Warehouse}
+                    options={warehouseOptions}
+                    onChange={handleEditItemWarehouse}
+                    optionLabel="name"
+                    placeholder="Select a warehouse"
+                    className="p-inputtext-sm w-full"
+                />
+            </>
+
         );
     };
 
@@ -347,7 +375,7 @@ const CreateGoodsReceipt = () => {
 
     const contentTFooter = (
         <div onClick={handleAddNewRow} className="flex items-center justify-center cursor-pointer">
-            +
+            + Add a new row
         </div>
     )
 
@@ -376,13 +404,13 @@ const CreateGoodsReceipt = () => {
                             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px]">
                                 <div className="flex flex-column gap-2">
                                     <label className='font-semibold'>Price List</label>
-                                    <Dropdown value={selectedPriceList} onChange={(e) => setSelectedPriceList(e.value)} options={priceListOptions} optionLabel="price-list"
+                                    <Dropdown options={priceListOptions} optionLabel="name"
                                         placeholder="Select price list" className="w-full" />
                                 </div>
                                 <div className="flex flex-column gap-2">
                                     <label className='font-semibold'>Series/No</label>
-                                    <Dropdown value={selectedSeriesNo} onChange={(e) => setSelectedSeriesNo(e.value)} options={seriesNoOptions} optionLabel="price-list"
-                                        placeholder="Select price list" className="w-full" />
+                                    <Dropdown value={selectedSeriesNo} onChange={(e) => setSelectedSeriesNo(e.value)} options={seriesNoOptions} optionLabel="name"
+                                        placeholder="Select series number" className="w-full" />
                                     {/* <InputText aria-describedby="price-list-help" /> */}
                                 </div>
                                 <div className="flex flex-column gap-2">
@@ -402,11 +430,11 @@ const CreateGoodsReceipt = () => {
                             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                 <div className="flex flex-column gap-2">
                                     <label className='font-semibold'>Remark</label>
-                                    <InputTextarea autoresize rows={2} />
+                                    <InputTextarea autoresize={true} rows={2} />
                                 </div>
                                 <div className="flex flex-column gap-2">
                                     <label className='font-semibold'>Journal Remark</label>
-                                    <InputTextarea autoresize rows={2} />
+                                    <InputTextarea autoresize={true} rows={2} />
                                 </div>
                             </div>
                         </section>
@@ -482,5 +510,5 @@ const CreateGoodsReceipt = () => {
     );
 };
 
-// export default withAuth(CreateGoodsReceipt);
-export default CreateGoodsReceipt;
+export default withAuth(CreateGoodsReceipt);
+// export default CreateGoodsReceipt;

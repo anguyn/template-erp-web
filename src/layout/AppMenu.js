@@ -96,15 +96,21 @@ const AppMenu = () => {
         {
             label: 'Inventory',
             items: [
-                { label: 'Item', icon: 'pi pi-fw pi-id-card', to: '/inventory/item' },
+                { label: 'Item', icon: 'pi pi-fw pi-shopping-bag', to: '/inventory/item' },
                 {
                     label: 'Goods Receipt',
-                    icon: 'pi pi-fw pi-exclamation-circle',
+                    icon: 'pi pi-fw pi-box',
                     to: '/inventory/goods-receipt',
                 },
                 {
+                    label: 'Delivery',
+                    icon: 'pi pi-fw pi-send',
+                    to: '/inventory/delivery',
+                },
+                {
                     label: 'Bin Location',
-                    icon: 'pi pi-fw pi-share-alt',
+                    // icon: 'pi pi-fw pi-warehouse',
+                    iconify: 'material-symbols:warehouse-outline',
                     to: '/inventory/binlocation',
                 },
                 { label: 'Goods Issue', icon: 'pi pi-fw pi-bookmark', to: '/inventory/goodsissue' },
@@ -193,9 +199,9 @@ const AppMenu = () => {
                     />
                 </Link>
                 <div className="layout-footer">
-            <span className="font-medium mx-1">PrimeReact</span>
-            <span>- Powered by an 🐼 </span>
-        </div>
+                    <span className="font-medium mx-1">PrimeReact</span>
+                    <span>- Powered by an 🐼 </span>
+                </div>
             </ul>
         </MenuProvider>
     );

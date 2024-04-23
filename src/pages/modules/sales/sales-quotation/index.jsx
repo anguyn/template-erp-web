@@ -16,7 +16,7 @@ import { Calendar } from 'primereact/calendar';
 import { MultiSelect } from 'primereact/multiselect';
 import { Slider } from 'primereact/slider';
 import { TriStateCheckbox } from 'primereact/tristatecheckbox';
-import { CustomerService } from '@/demo/service/CustomerService';
+// import { CustomerService } from '@/demo/service/CustomerService';
 import { InputText } from 'primereact/inputtext';
 
 const SalesQuotation = () => {
@@ -26,42 +26,42 @@ const SalesQuotation = () => {
 
   const items = [
     {
-        label: 'Options',
-        items: [
-            {
-                label: 'Update',
-                icon: 'pi pi-refresh',
-                command: () => {
-                    toast.current.show({ severity: 'success', summary: 'Updated', detail: 'Data Updated', life: 3000 });
-                }
-            },
-            {
-                label: 'Delete',
-                icon: 'pi pi-times',
-                command: () => {
-                    toast.current.show({ severity: 'warn', summary: 'Delete', detail: 'Data Deleted', life: 3000 });
-                }
-            }
-        ]
+      label: 'Options',
+      items: [
+        {
+          label: 'Update',
+          icon: 'pi pi-refresh',
+          command: () => {
+            toast.current.show({ severity: 'success', summary: 'Updated', detail: 'Data Updated', life: 3000 });
+          }
+        },
+        {
+          label: 'Delete',
+          icon: 'pi pi-times',
+          command: () => {
+            toast.current.show({ severity: 'warn', summary: 'Delete', detail: 'Data Deleted', life: 3000 });
+          }
+        }
+      ]
     },
     {
-        label: 'Navigate',
-        items: [
-            {
-                label: 'React Website',
-                icon: 'pi pi-external-link',
-                url: 'https://reactjs.org/'
-            },
-            {
-                label: 'Router',
-                icon: 'pi pi-upload',
-                command:(e) => {
-                    //router.push('/fileupload');
-                }
-            }
-        ]
+      label: 'Navigate',
+      items: [
+        {
+          label: 'React Website',
+          icon: 'pi pi-external-link',
+          url: 'https://reactjs.org/'
+        },
+        {
+          label: 'Router',
+          icon: 'pi pi-upload',
+          command: (e) => {
+            //router.push('/fileupload');
+          }
+        }
+      ]
     }
-];
+  ];
 
   useEffect(() => {
     (async function () {
@@ -134,10 +134,10 @@ const SalesQuotation = () => {
   };
 
   useEffect(() => {
-    CustomerService.getCustomersLarge().then((data) => {
-      setCustomers1(getCustomers(data));
-      setLoading1(false);
-    });
+    // CustomerService.getCustomersLarge().then((data) => {
+    //   setCustomers1(getCustomers(data));
+    //   setLoading1(false);
+    // });
 
     initFilters1();
   }, []);
@@ -527,10 +527,10 @@ const SalesQuotation = () => {
               // filterField=""
               style={{ minWidth: '12rem' }}
               body={descriptionBodyTemplate}
-              // filter
-              // filterPlaceholder="Search by country"
-              // filterClear={filterClearTemplate}
-              // filterApply={filterApplyTemplate}
+            // filter
+            // filterPlaceholder="Search by country"
+            // filterClear={filterClearTemplate}
+            // filterApply={filterApplyTemplate}
             />
             <Column
               header="Stock"
@@ -539,8 +539,8 @@ const SalesQuotation = () => {
               filterMenuStyle={{ width: '14rem' }}
               style={{ minWidth: '14rem' }}
               body={stockBodyTemplate}
-              // filter
-              // filterElement={representativeFilterTemplate}
+            // filter
+            // filterElement={representativeFilterTemplate}
             />
             {/* <Column
               header="Created"

@@ -62,7 +62,7 @@ const ItemList = (props) => {
 
     return (
         <Dialog header="Select Item" visible={itemSelectModalOpen} onHide={() => setItemSelectModalOpen(false)}
-            style={{ width: '75vw' }} breakpoints={{ '960px': '80vw', '641px': '100vw' }} footer={renderDFooter}>
+            style={{ width: '75vw', minHeight: '75vh' }} breakpoints={{ '960px': '80vw', '641px': '100vw' }} footer={renderDFooter}>
             <div>
                 <DataTable header={renderTHeader} paginator rows={10} rowsPerPageOptions={[10, 25, 50, 100]} filters={filters} loading={loading} selectionMode={'radiobutton'} className="list-table" value={itemList} showGridlines tableStyle={{ minWidth: '50rem' }} selection={selectedItem} onSelectionChange={(e) => setSelectedItem(e.value)} dataKey="id">
                     <Column selectionMode="single" headerStyle={{ width: '3rem' }}></Column>

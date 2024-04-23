@@ -1,6 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 // import { Button } from 'primereact/button';
-// import { Button } from '@ui5/webcomponents-react';
 // import { Icon } from '@iconify-icon/react';
 import { Chart } from 'primereact/chart';
 import { Column } from 'primereact/column';
@@ -543,3 +542,4 @@ const MyHome = () => {
 };
 
 export default withAuth(MyHome);
+// export default MyHome;

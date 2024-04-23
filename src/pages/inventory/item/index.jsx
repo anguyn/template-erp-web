@@ -19,7 +19,7 @@ import { TriStateCheckbox } from 'primereact/tristatecheckbox';
 // import { CustomerService } from '@/demo/service/CustomerService';
 import { InputText } from 'primereact/inputtext';
 
-const Product = () => {
+const Item = () => {
     const [products, setProducts] = useState(null);
     const menuRight = useRef(null);
     const toast = useRef(null);
@@ -85,12 +85,23 @@ const Product = () => {
                 setLoading2(false);
             }
         })();
+        // setProducts({
+        //     value: [{
+        //         ItemCode: 1,
+        //         ItemName: "Hello",
+        //         QuantityOnStock: 10,
+        //     }, {
+        //         ItemCode: 2,
+        //         ItemName: "Hello",
+        //         QuantityOnStock: 10,
+        //     }]
+        // });
     }, []);
 
     const [customers1, setCustomers1] = useState(null);
     const [filters1, setFilters1] = useState(null);
     const [loading1, setLoading1] = useState(true);
-    const [loading2, setLoading2] = useState(true);
+    const [loading2, setLoading2] = useState(false);
     const [globalFilterValue1, setGlobalFilterValue1] = useState('');
 
     const representatives = [
@@ -421,102 +432,9 @@ const Product = () => {
 
     return (
         <div className="flex flex-col">
-            {/* <div className="w-full">
-            <div className="card">
-            <h5>Filter Menu</h5>
-            <DataTable
-                value={customers1}
-                paginator
-                className="p-datatable-gridlines"
-                showGridlines
-                rows={10}
-                dataKey="id"
-                filters={filters1}
-                filterDisplay="menu"
-                loading={loading1}
-                responsiveLayout="scroll"
-                emptyMessage="No customers found."
-                header={header1}
-            >
-            <Column
-                field="name"
-                header="Name"
-                filter
-                filterPlaceholder="Search by name"
-                style={{ minWidth: '12rem' }}
-            />
-            <Column
-                header="Country"
-                filterField="country.name"
-                style={{ minWidth: '12rem' }}
-                body={countryBodyTemplate}
-                filter
-                filterPlaceholder="Search by country"
-                filterClear={filterClearTemplate}
-                filterApply={filterApplyTemplate}
-            />
-            <Column
-                header="Agent"
-                filterField="representative"
-                showFilterMatchModes={false}
-                filterMenuStyle={{ width: '14rem' }}
-                style={{ minWidth: '14rem' }}
-                body={representativeBodyTemplate}
-                filter
-                filterElement={representativeFilterTemplate}
-            />
-            <Column
-                header="Date"
-                filterField="date"
-                dataType="date"
-                style={{ minWidth: '10rem' }}
-                body={dateBodyTemplate}
-                filter
-                filterElement={dateFilterTemplate}
-            />
-            <Column
-                header="Balance"
-                filterField="balance"
-                dataType="numeric"
-                style={{ minWidth: '10rem' }}
-                body={balanceBodyTemplate}
-                filter
-                filterElement={balanceFilterTemplate}
-            />
-            <Column
-                field="status"
-                header="Status"
-                filterMenuStyle={{ width: '14rem' }}
-                style={{ minWidth: '12rem' }}
-                body={statusBodyTemplate}
-                filter
-                filterElement={statusFilterTemplate}
-            />
-            <Column
-                field="activity"
-                header="Activity"
-                showFilterMatchModes={false}
-                style={{ minWidth: '12rem' }}
-                body={activityBodyTemplate}
-                filter
-                filterElement={activityFilterTemplate}
-            />
-            <Column
-                field="verified"
-                header="Verified"
-                dataType="boolean"
-                bodyClassName="text-center"
-                style={{ minWidth: '8rem' }}
-                body={verifiedBodyTemplate}
-                filter
-                filterElement={verifiedFilterTemplate}
-            />
-          </DataTable>
-        </div>
-      </div> */}
             <div className="w-full">
                 <div className="card">
-                    <h5>Filtered Product</h5>
+                    <h3>Item List</h3>
                     <DataTable
                         value={products?.value}
                         paginator
@@ -531,6 +449,7 @@ const Product = () => {
                         responsiveLayout="scroll"
                         emptyMessage="No product found."
                         header={header1}
+                        tableStyle={{ minWidth: '50rem' }}
                     >
                         <Column
                             field="code"
@@ -561,52 +480,6 @@ const Product = () => {
                         // filter
                         // filterElement={representativeFilterTemplate}
                         />
-                        {/* <Column
-              header="Created"
-              filterField="date"
-              dataType="date"
-              style={{ minWidth: '10rem' }}
-              // body={dateBodyTemplate}
-              // filter
-              // filterElement={dateFilterTemplate}
-            />
-            <Column
-              header="Balance"
-              filterField="balance"
-              dataType="numeric"
-              style={{ minWidth: '10rem' }}
-              // body={balanceBodyTemplate}
-              // filter
-              // filterElement={balanceFilterTemplate}
-            />
-            <Column
-              field="status"
-              header="Status"
-              filterMenuStyle={{ width: '14rem' }}
-              style={{ minWidth: '12rem' }}
-              // body={statusBodyTemplate}
-              // filter
-              // filterElement={statusFilterTemplate}
-            />
-            <Column
-              field="activity"
-              header="Activity"
-              showFilterMatchModes={false}
-              style={{ minWidth: '12rem' }}
-              // body={activityBodyTemplate}
-              // filter
-              // filterElement={activityFilterTemplate}
-            />
-            <Column
-              field="verified"
-              header="Verified"
-              dataType="boolean"
-              bodyClassName="text-center"
-              style={{ minWidth: '8rem' }}
-              // body={verifiedBodyTemplate}
-              // filter
-              // filterElement={verifiedFilterTemplate}
-            /> */}
                     </DataTable>
                 </div>
             </div>
@@ -614,5 +487,5 @@ const Product = () => {
     );
 };
 
-// export default withAuth(Product);
-export default Product;
+export default withAuth(Item);
+// export default Item;

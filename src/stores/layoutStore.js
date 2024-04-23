@@ -12,7 +12,7 @@ export const useLayoutStore = createSelectors(createWithEqualityFn(
                 inputStyle: 'outlined',
                 menuMode: 'static',
                 colorScheme: 'light',
-                theme: 'lara-light-indigo',
+                theme: 'bootstrap4-light-purple',
                 scale: 14,
             },
             setLayoutConfig: (partialState) => {

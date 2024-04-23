@@ -1,19 +1,21 @@
 "use client"
 import React, { useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation'
+import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { Checkbox } from 'primereact/checkbox';
 import { Calendar } from 'primereact/calendar';
 import { DataTable } from 'primereact/datatable';
-import { Divider } from 'primereact/divider';
-import { MultiSelect } from 'primereact/multiselect';
-import { Fieldset } from 'primereact/fieldset';
-import { ListBox } from 'primereact/listbox';
-import { FilterMatchMode, FilterOperator } from 'primereact/api';
-import { Button } from 'primereact/button';
-import { Menu } from 'primereact/menu';
-import { InputText } from 'primereact/inputtext';
 import { Dialog } from 'primereact/dialog';
+import { Divider } from 'primereact/divider';
+import { Dropdown } from 'primereact/dropdown';
+import { InputText } from 'primereact/inputtext';
+import { Fieldset } from 'primereact/fieldset';
+import { FilterMatchMode, FilterOperator } from 'primereact/api';
+import { ListBox } from 'primereact/listbox';
+import { Menu } from 'primereact/menu';
+import { MultiSelect } from 'primereact/multiselect';
+import { Tag } from 'primereact/tag';
 import withAuth from '@/utils/withAuth';
 import inventoryApi from '@/service/ServiceLayer/inventoryApi';
 import toast from 'react-hot-toast';
@@ -29,109 +31,27 @@ const filterOptionTemplate = (option) => {
     );
 };
 
-const GoodsReceipt = () => {
+const Delivery = () => {
     const [selectedFilterOption, setSelectedFilterOption] = useState(null);
-
+    const [statuses] = useState(['Unqualified', 'Qualified', 'New', 'Negotiation', 'Renewal']);
     const [filterOptions, setFilterOptions] = useState([
         { name: 'Search', code: 'search', selected: true },
         { name: 'Document No.', code: 'docNo', selected: true },
-        { name: 'Posting Date', code: 'postingDate', selected: true },
-        { name: 'User Code', code: 'userCode', selected: true },
-        { name: 'Actual Days', code: 'actualDays', selected: false },
-        { name: 'APInvoice eNo', code: 'apInvEno', selected: false },
+        { name: 'Customer Code', code: 'customerCode', selected: true },
+        { name: 'Customer Name', code: 'customerName', selected: true },
+        { name: 'Posting Date', code: 'postingDate', selected: false },
+        { name: 'Delivery Date', code: 'deliveryDate', selected: true },
+        { name: 'Sales Employee Name', code: 'salesEmployeeName', selected: true },
+        { name: 'Status', code: 'status', selected: true },
         { name: 'Document Total', code: 'docTotal', selected: false },
+        { name: 'Document Total (FC)', code: 'docTotalFC', selected: false },
+        { name: 'Gross Profit Total', code: 'grossProfitTotal', selected: false },
+        { name: 'Gross Profit Total (FC)', code: 'grossProfitTotalFC', selected: false },
     ]);
 
     const router = useRouter();
-    const goodsReceiptColumns = useMemo(
-        () => [
-            {
-                header: 'Document No.',
-                field: 'DocNo',
-                sortable: true,
-                className: 'text-center',
-                minWidth: '12rem',
-                filterField: 'DocNo',
-                filter: true,
-                showFilterMatchModes: true,
-                filterElement: ''
-            },
-            {
-                header: 'Posting Date',
-                field: 'PostingDate',
-                sortable: true,
-                className: 'text-center',
-                minWidth: '12rem',
-                filterField: 'PostingDate',
-                filter: true,
-                showFilterMatchModes: true,
-                filterElement: ''
-            },
-            {
-                header: 'Document Date',
-                field: 'DocumentDate',
-                sortable: true,
-                className: 'text-center',
-                minWidth: '14rem',
-                filterField: 'DocumentDate',
-                filter: true,
-                showFilterMatchModes: false,
-                filterElement: ''
-            },
-            {
-                header: 'Document Total',
-                field: 'DocumentTotal',
-                sortable: true,
-                className: 'text-right',
-                minWidth: '14rem',
-                filterField: 'DocumentTotal',
-                filter: true,
-                showFilterMatchModes: true,
-                filterElement: ''
-            },
-        ],
-        []
-    );
 
-    const [grFilters, setGRFilters] = useState({
-        // global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-        // DocNo: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
-        // PostingDate: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
-        // DocumentDate: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
-        // DocumentTotal: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
-        // DocumentDate: { value: null, matchMode: FilterMatchMode.IN },
-        // status: { value: null, matchMode: FilterMatchMode.EQUALS },
-    });
-    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-
-    const [goodsReceiptData, setGoodsReceiptData] = useState([]);
-    const [selectedGoodsReceipt, setSelectedGoodsReceipt] = useState(null);
-    const [searchInput, setSearchInput] = useState('');
-    const [menuIsOpen, setMenuIsOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [globalFilterValue, setGlobalFilterValue] = useState('');
-    const [visibleGRColumns, setVisibleGRColumns] = useState(goodsReceiptColumns);
-
-    const exportMenu = useRef(null);
-    const goodsReceiptT = useRef(null);
-    const filterListRef = useRef(null);
-
-    const markNavigatedRow = useCallback(
-        (row) => {
-            return selectedGoodsReceipt?.id === row.id;
-        },
-        [selectedGoodsReceipt]
-    );
-
-    const onGlobalFilterChange = (e) => {
-        const value = e.target.value;
-        let _filters = { ...grFilters };
-        _filters['global'].value = value;
-
-        setGRFilters(_filters);
-        setGlobalFilterValue(value);
-    };
-
+    // Template
     const codeBodyTemplate = (rowData) => {
         return (
             <React.Fragment>
@@ -156,13 +76,147 @@ const GoodsReceipt = () => {
         );
     };
 
+    const statusBodyTemplate = (rowData) => {
+        return <Tag value={rowData.Status} severity={getSeverity(rowData.Status)} />;
+    };
+
+    // useMemo
+    const deliveryColumns = useMemo(
+        () => [
+            {
+                header: 'Document No.',
+                field: 'DocNo',
+                sortable: true,
+                className: 'text-center',
+                minWidth: '12rem',
+                filterField: 'DocNo',
+                filter: true,
+                showFilterMatchModes: true,
+                body: '',
+                filterElement: ''
+            },
+            {
+                header: 'Customer Code',
+                field: 'CustomerCode',
+                sortable: true,
+                className: 'text-center',
+                minWidth: '12rem',
+                filterField: 'CustomerCode',
+                filter: true,
+                showFilterMatchModes: true,
+                body: '',
+                filterElement: ''
+            },
+            {
+                header: 'Customer Name',
+                field: 'CustomerName',
+                sortable: true,
+                className: 'text-center',
+                minWidth: '12rem',
+                filterField: 'CustomerName',
+                filter: true,
+                showFilterMatchModes: true,
+                body: '',
+                filterElement: ''
+            },
+            {
+                header: 'Posting Date',
+                field: 'PostingDate',
+                sortable: true,
+                className: 'text-center',
+                minWidth: '12rem',
+                filterField: 'PostingDate',
+                filter: true,
+                showFilterMatchModes: true,
+                body: '',
+                filterElement: ''
+            },
+            {
+                header: 'Delivery Date',
+                field: 'DeliveryDate',
+                sortable: true,
+                className: 'text-center',
+                minWidth: '14rem',
+                filterField: 'DeliveryDate',
+                filter: true,
+                showFilterMatchModes: false,
+                body: '',
+                filterElement: ''
+            },
+            {
+                header: 'Document Total',
+                field: 'DocumentTotal',
+                sortable: true,
+                className: 'text-right',
+                minWidth: '14rem',
+                filterField: 'DocumentTotal',
+                filter: true,
+                showFilterMatchModes: true,
+                body: '',
+                filterElement: ''
+            },
+            {
+                header: 'Status',
+                field: 'Status',
+                sortable: true,
+                className: 'text-center',
+                minWidth: '14rem',
+                filterField: 'Status',
+                filter: true,
+                showFilterMatchModes: true,
+                body: statusBodyTemplate,
+                filterElement: ''
+            },
+        ],
+        []
+    );
+
+    const [grFilters, setGRFilters] = useState({
+        // global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+        // DocNo: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+        // PostingDate: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+        // DocumentDate: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+        // DocumentTotal: { value: null, matchMode: FilterMatchMode.STARTS_WITH },
+        // DocumentDate: { value: null, matchMode: FilterMatchMode.IN },
+        // status: { value: null, matchMode: FilterMatchMode.EQUALS },
+    });
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
+    const [deliveryData, setDeliveryData] = useState([]);
+    const [selectedDelivery, setSelectedDelivery] = useState(null);
+    const [searchInput, setSearchInput] = useState('');
+    const [menuIsOpen, setMenuIsOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [globalFilterValue, setGlobalFilterValue] = useState('');
+    const [visibleGRColumns, setVisibleGRColumns] = useState(deliveryColumns);
+
+    const exportMenu = useRef(null);
+    const deliveryT = useRef(null);
+    const filterListRef = useRef(null);
+
+    const markNavigatedRow = useCallback(
+        (row) => {
+            return selectedDelivery?.id === row.id;
+        },
+        [selectedDelivery]
+    );
+
+    const onGlobalFilterChange = (e) => {
+        const value = e.target.value;
+        let _filters = { ...grFilters };
+        _filters['global'].value = value;
+
+        setGRFilters(_filters);
+        setGlobalFilterValue(value);
+    };
+
     const onRowSelect = (e) => {
         setSelectedRow(e.detail.row);
     };
 
     const onColumnToggle = (e) => {
         let selectedColumns = e.value;
-        let orderedSelectedColumns = goodsReceiptColumns.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
+        let orderedSelectedColumns = deliveryColumns.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
 
         setVisibleGRColumns(orderedSelectedColumns);
     };
@@ -191,7 +245,7 @@ const GoodsReceipt = () => {
                         // size="small"
                         onClick={() => initGRFilters()}
                     />
-                    <MultiSelect value={visibleGRColumns} options={goodsReceiptColumns} optionLabel="header" onChange={onColumnToggle} className="p-inputtext-sm w-full sm:w-20rem text-sm" display="chip" />
+                    <MultiSelect  value={visibleGRColumns} options={deliveryColumns} optionLabel="header" onChange={onColumnToggle} className="p-inputtext-sm w-full sm:w-20rem text-sm" display="chip" />
                 </div>
                 <span className="p-input-icon-left">
                     <i className="pi pi-search" />
@@ -208,36 +262,48 @@ const GoodsReceipt = () => {
 
     const header = renderHeader();
 
-    const getAllGoodsReceipt = async () => {
+    const getAllDelivery = async () => {
         try {
             setLoading(true)
             const res = [
                 {
                     DocNo: 80,
+                    CustomerCode: 'C00001',
+                    CustomerName: 'Công ty TNHH A',
                     PostingDate: '12/02/2023',
-                    DocumentDate: '12/02/2023',
+                    DeliveryDate: '12/02/2023',
                     DocumentTotal: '145',
+                    Status: 'New'
                 },
                 {
                     DocNo: 31,
+                    CustomerCode: 'C00001',
+                    CustomerName: 'Công ty TNHH A',
                     PostingDate: '25/03/2023',
-                    DocumentDate: '26/03/2023',
+                    DeliveryDate: '26/03/2023',
                     DocumentTotal: '89',
+                    Status: 'Unqualified'
                 },
                 {
                     DocNo: 58,
+                    CustomerCode: 'C00002',
+                    CustomerName: 'Công ty TNHH B',
                     PostingDate: '08/03/2023',
-                    DocumentDate: '06/03/2023',
+                    DeliveryDate: '06/03/2023',
                     DocumentTotal: '75',
+                    Status: 'Qualified'
                 },
                 {
                     DocNo: 32,
+                    CustomerCode: 'C00002',
+                    CustomerName: 'Công ty TNHH B',
                     PostingDate: '15/04/2023',
-                    DocumentDate: '02/05/2023',
+                    DeliveryDate: '02/05/2023',
                     DocumentTotal: '49',
+                    Status: 'Renewal'
                 },
             ];
-            setGoodsReceiptData(res);
+            setDeliveryData(res);
         } catch (e) {
             console.error(e);
             toast.error("There is an error occured.")
@@ -246,9 +312,32 @@ const GoodsReceipt = () => {
         }
     }
 
+    const getSeverity = (status) => {
+        switch (status) {
+            case 'Unqualified':
+                return 'danger';
+
+            case 'Qualified':
+                return 'success';
+
+            case 'New':
+                return 'info';
+
+            case 'Negotiation':
+                return 'warning';
+
+            case 'Renewal':
+                return null;
+        }
+    };
+
+    const statusItemTemplate = (option) => {
+        return <Tag value={option} severity={getSeverity(option)} />;
+    };
+
     // Export Functions
     const exportCsv = (selectionOnly) => {
-        goodsReceiptT.current.exportCSV({ selectionOnly });
+        deliveryT.current.exportCSV({ selectionOnly });
     };
 
     const exportPdf = () => {
@@ -256,7 +345,7 @@ const GoodsReceipt = () => {
             import('jspdf-autotable').then(() => {
                 const doc = new jsPDF.default(0, 0);
 
-                doc.autoTable(goodsReceiptColumns.map((col) => ({ title: col.header, dataKey: col.field })), goodsReceiptData);
+                doc.autoTable(deliveryColumns.map((col) => ({ title: col.header, dataKey: col.field })), deliveryData);
                 doc.save('Goods-Receipt.pdf');
             });
         });
@@ -264,7 +353,7 @@ const GoodsReceipt = () => {
 
     const exportExcel = () => {
         import('xlsx').then((xlsx) => {
-            const worksheet = xlsx.utils.json_to_sheet(goodsReceiptData);
+            const worksheet = xlsx.utils.json_to_sheet(deliveryData);
             const workbook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
             const excelBuffer = xlsx.write(workbook, {
                 bookType: 'xlsx',
@@ -293,8 +382,8 @@ const GoodsReceipt = () => {
         import('file-saver').then((module) => {
             if (module && module.default) {
                 const { saveAs } = module.default;
-                // console.log(goodsReceiptT.current.getTable());
-                const data = goodsReceiptData;
+                // console.log(deliveryT.current.getTable());
+                const data = deliveryData;
                 const jsonData = JSON.stringify(data);
                 const blob = new Blob([jsonData], { type: 'application/json;charset=utf-8' });
                 saveAs(blob, 'Goods-Receipt.json');
@@ -366,7 +455,7 @@ const GoodsReceipt = () => {
     // }
 
     useEffect(() => {
-        getAllGoodsReceipt();
+        getAllDelivery();
         initGRFilters();
     }, []);
 
@@ -378,7 +467,7 @@ const GoodsReceipt = () => {
         <div id="custom-section" className="flex flex-col relative" >
             <div className="w-full">
                 <div className="card">
-                    <h3>Goods Receipt</h3>
+                    <h3>Delivery</h3>
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 p-[10px]">
                         {
                             filterOptions.find(option => option.code === 'search')?.selected && (
@@ -399,6 +488,24 @@ const GoodsReceipt = () => {
                         }
 
                         {
+                            filterOptions.find(option => option.code === 'customerCode')?.selected && (
+                                <div className="flex flex-column gap-2">
+                                    <label className="font-semibold">Customer Code</label>
+                                    <InputText placeholder="Enter customer code" className="p-inputtext-sm text-base" />
+                                </div>
+                            )
+                        }
+
+                        {
+                            filterOptions.find(option => option.code === 'customerName')?.selected && (
+                                <div className="flex flex-column gap-2">
+                                    <label className="font-semibold">Customer Name</label>
+                                    <InputText placeholder="Enter customer name" className="p-inputtext-sm text-base" />
+                                </div>
+                            )
+                        }
+
+                        {
                             filterOptions.find(option => option.code === 'postingDate')?.selected && (
                                 <div className="flex flex-column gap-2">
                                     <label className="font-semibold">Posting Date</label>
@@ -408,28 +515,29 @@ const GoodsReceipt = () => {
                         }
 
                         {
-                            filterOptions.find(option => option.code === 'userCode')?.selected && (
+                            filterOptions.find(option => option.code === 'deliveryDate')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">User Code</label>
-                                    <InputText placeholder="Enter user code" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">Delivery Date</label>
+                                    <Calendar className="p-inputtext-sm text-base" showIcon />
                                 </div>
                             )
                         }
 
                         {
-                            filterOptions.find(option => option.code === 'actualDays')?.selected && (
+                            filterOptions.find(option => option.code === 'salesEmployeeName')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Actual Days</label>
-                                    <InputText placeholder="Enter user code" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">Sales Employee Name</label>
+                                    <InputText placeholder="Enter sales employee name" className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
 
                         {
-                            filterOptions.find(option => option.code === 'apInvEno')?.selected && (
+                            filterOptions.find(option => option.code === 'status')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">APInvoice eNo</label>
-                                    <InputText placeholder="Enter user code" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">Status</label>
+                                    <Dropdown options={statuses} itemTemplate={statusItemTemplate} placeholder="Select status" className="p-column-filter p-inputtext-sm text-base" showClear />
+                                    {/* <InputText placeholder="Enter status" className="p-inputtext-sm text-base" /> */}
                                 </div>
                             )
                         }
@@ -438,7 +546,34 @@ const GoodsReceipt = () => {
                             filterOptions.find(option => option.code === 'docTotal')?.selected && (
                                 <div className="flex flex-column gap-2">
                                     <label className="font-semibold">Document Total</label>
-                                    <InputText placeholder="Enter user code" className="p-inputtext-sm text-base" />
+                                    <InputText placeholder="Enter document total" className="p-inputtext-sm text-base" />
+                                </div>
+                            )
+                        }
+
+                        {
+                            filterOptions.find(option => option.code === 'docTotalFC')?.selected && (
+                                <div className="flex flex-column gap-2">
+                                    <label className="font-semibold">Document Total (FC)</label>
+                                    <InputText placeholder="Enter document total (FC)" className="p-inputtext-sm text-base" />
+                                </div>
+                            )
+                        }
+
+                        {
+                            filterOptions.find(option => option.code === 'grossProfitTotal')?.selected && (
+                                <div className="flex flex-column gap-2">
+                                    <label className="font-semibold">Gross Profit Total</label>
+                                    <InputText placeholder="Enter gross total" className="p-inputtext-sm text-base" />
+                                </div>
+                            )
+                        }
+
+                        {
+                            filterOptions.find(option => option.code === 'grossProfitTotalFC')?.selected && (
+                                <div className="flex flex-column gap-2">
+                                    <label className="font-semibold">Gross Profit Total (FC)</label>
+                                    <InputText placeholder="Enter gross total (FC)" className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -450,7 +585,7 @@ const GoodsReceipt = () => {
                                 label="Create"
                                 severity="create"
                                 outlined
-                                onClick={() => router.push('/inventory/goods-receipt/create')}
+                                onClick={() => router.push('/inventory/delivery/create')}
                             />
                         </div>
                         <div className="">
@@ -482,19 +617,19 @@ const GoodsReceipt = () => {
                     </div>
                     <section className="mt-4">
                         <DataTable
-                            ref={goodsReceiptT}
+                            ref={deliveryT}
                             id="goods-receipt-table"
-                            value={goodsReceiptData}
+                            value={deliveryData}
                             className="p-datatable-gridlines"
                             paginator
                             showGridlines
                             rows={8}
                             rowsPerPageOptions={[20, 50, 100, 200]}
                             selectionMode={'checkbox'}
-                            selection={selectedGoodsReceipt}
+                            selection={selectedDelivery}
                             onSelectionChange={(e) => {
                                 const currentValue = e.value;
-                                setSelectedGoodsReceipt(e.value)
+                                setSelectedDelivery(e.value)
                             }}
                             globalFilterFields={['DocNo', 'PostingDate', 'DocumentDate', 'DocumentTotal']}
                             dataKey="DocNo"
@@ -512,8 +647,9 @@ const GoodsReceipt = () => {
                         >
                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
                             {
-                                visibleGRColumns && visibleGRColumns.length > 0 && visibleGRColumns.map((col) => (
+                                visibleGRColumns && visibleGRColumns.length > 0 && visibleGRColumns.map((col, idx) => (
                                     <Column
+                                        key={idx}
                                         header={col.header}
                                         field={col.field}
                                         filter={col.filter}
@@ -523,9 +659,9 @@ const GoodsReceipt = () => {
                                         style={{ minWidth: col.minWidth }}
                                         className="text-right"
                                         filterElement={col.filterElement}
-                                    // body={stockBodyTemplate}
-                                    // filter
-                                    // filterElement={representativeFilterTemplate}
+                                        body={col.body}
+                                        // filter
+                                        // filterElement={representativeFilterTemplate}
                                     />
                                 ))
                             }
@@ -535,7 +671,7 @@ const GoodsReceipt = () => {
                 </div>
             </div>
             {/* This is modal section */}
-            <Dialog header="Filter option" visible={isFilterModalOpen} onHide={() => setIsFilterModalOpen(false)}
+            <Dialog header="Filter option" blockScroll visible={isFilterModalOpen} onHide={() => setIsFilterModalOpen(false)}
                 style={{ width: '50vw' }} breakpoints={{ '960px': '75vw', '641px': '100vw' }}>
                 <div clasName="m-0 p-2 pt-1">
                     {/* <div className="p-inputgroup flex-1 mt-1">
@@ -549,5 +685,5 @@ const GoodsReceipt = () => {
     );
 };
 
-export default withAuth(GoodsReceipt);
-// export default GoodsReceipt;
+export default withAuth(Delivery);
+// export default Delivery;
