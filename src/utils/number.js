@@ -1,6 +1,10 @@
 function formatNumberWithComma(num) {
-    if (isNaN(num) || num === 0 || num === null || num === undefined) {
+    if (isNaN(num)  || num === null || num === undefined) {
         return '-';
+    }
+
+    if (num === 0) {
+        return '0'
     }
 
     var isNegative = false;

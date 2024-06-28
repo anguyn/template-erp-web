@@ -103,6 +103,11 @@ const AppMenu = () => {
                     to: '/inventory/goods-receipt',
                 },
                 {
+                    label: 'Goods Receipt PO',
+                    icon: 'pi pi-fw pi-box',
+                    to: '/inventory/goods-receipt-po',
+                },
+                {
                     label: 'Delivery',
                     icon: 'pi pi-fw pi-send',
                     to: '/inventory/delivery',

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import PrimeReact from 'primereact/api';
 import { Button } from 'primereact/button';
 import { InputSwitch } from 'primereact/inputswitch';
@@ -7,8 +8,18 @@ import { Sidebar } from 'primereact/sidebar';
 import { classNames } from 'primereact/utils';
 import { useLayoutStore } from '@/stores/layoutStore';
 import { shallow } from 'zustand/shallow';
+import { useRouter } from 'next/router';
+import { useTranslations } from 'next-intl';
 
 const AppConfig = (props) => {
+    const languages = [
+        { name: 'English', code: 'en' },
+        { name: 'Vietnamese', code: 'vi' },
+        { name: 'France', code: 'fr' }
+    ];
+
+    const router = useRouter();
+    const { locale, locales, route } = router;
     const [scales] = useState([12, 13, 14, 15, 16]);
 
     const { layoutState, layoutConfig, setLayoutState, setLayoutConfig } = useLayoutStore(
@@ -38,10 +49,6 @@ const AppConfig = (props) => {
     };
 
     const changeTheme = (theme, colorScheme) => {
-        console.log('QQ dì dị:', {
-            theme,
-            colorScheme,
-        });
         PrimeReact.changeTheme(layoutConfig.theme, theme, 'theme-css', () => {
             setLayoutConfig({ theme, colorScheme });
         });
@@ -58,6 +65,13 @@ const AppConfig = (props) => {
     const applyScale = () => {
         document.documentElement.style.fontSize = layoutConfig.scale + 'px';
     };
+
+    const handleNavigation = useCallback((lang) => {
+        router.push({
+            pathname: route,
+            query: router.query, 
+        }, undefined, { locale: lang });
+    }, [router, route]);
 
     useEffect(() => {
         applyScale();
@@ -77,7 +91,7 @@ const AppConfig = (props) => {
                 visible={layoutState.configSidebarVisible}
                 onHide={onConfigSidebarHide}
                 position="right"
-                className="layout-config-sidebar w-20rem"
+                className="layout-config-sidebar w-20rem z-[4206]"
             >
                 {!props.simple && (
                     <>
@@ -145,106 +159,113 @@ const AppConfig = (props) => {
                 <h5>Theme</h5>
                 <div className="grid grid-rows-4 grid-flow-col gap-2">
                     <div className="flex gap-2 p-2">
-                            <button
-                                className="flex flex-1 items-center gap-2 p-link w-2 h-2"
-                                onClick={() => changeTheme('bootstrap4-light-blue', 'light')}
-                            >
-                                <img
-                                    src="/layout/images/themes/bootstrap4-light-blue.svg"
-                                    className="w-2 h-2"
-                                    alt="Bootstrap Light Blue"
-                                />
+                        <button
+                            className="flex flex-1 items-center gap-2 p-link w-2 h-2"
+                            onClick={() => changeTheme('bootstrap4-light-blue', 'light')}
+                        >
+                            <img
+                                src="/layout/images/themes/bootstrap4-light-blue.svg"
+                                className="w-2 h-2"
+                                alt="Bootstrap Light Blue"
+                            />
                             <span className='text-sm'>Light Blue</span>
-                            </button>
-                            <button
-                                className="flex flex-1 items-center gap-2 p-link w-2 h-2"
-                                onClick={() => changeTheme('bootstrap4-dark-blue', 'dark')}
-                            >
-                                <img
-                                    src="/layout/images/themes/bootstrap4-dark-blue.svg"
-                                    className="w-2 h-2"
-                                    alt="Bootstrap Dark Blue"
-                                />
+                        </button>
+                        <button
+                            className="flex flex-1 items-center gap-2 p-link w-2 h-2"
+                            onClick={() => changeTheme('bootstrap4-dark-blue', 'dark')}
+                        >
+                            <img
+                                src="/layout/images/themes/bootstrap4-dark-blue.svg"
+                                className="w-2 h-2"
+                                alt="Bootstrap Dark Blue"
+                            />
                             <span className='text-sm'>Dark Blue</span>
-                            </button>
+                        </button>
                     </div>
                     <div className="flex gap-2 p-2">
-                            <button
-                                className="flex flex-1 items-center gap-2 p-link w-2 h-2"
-                                onClick={() => changeTheme('bootstrap4-light-purple', 'light')}
-                            >
-                                <img
-                                    src="/layout/images/themes/bootstrap4-light-purple.svg"
-                                    className="w-2 h-2"
-                                    alt="Bootstrap Light Purple"
-                                />
+                        <button
+                            className="flex flex-1 items-center gap-2 p-link w-2 h-2"
+                            onClick={() => changeTheme('bootstrap4-light-purple', 'light')}
+                        >
+                            <img
+                                src="/layout/images/themes/bootstrap4-light-purple.svg"
+                                className="w-2 h-2"
+                                alt="Bootstrap Light Purple"
+                            />
                             <span className='text-sm'>Light Purple</span>
-                            </button>
-                            <button
-                                className="flex flex-1 items-center gap-2 p-link w-2 h-2"
-                                onClick={() => changeTheme('bootstrap4-dark-purple', 'dark')}
-                            >
-                                <img
-                                    src="/layout/images/themes/bootstrap4-dark-purple.svg"
-                                    className="w-2 h-2"
-                                    alt="Bootstrap Dark Purple"
-                                />
+                        </button>
+                        <button
+                            className="flex flex-1 items-center gap-2 p-link w-2 h-2"
+                            onClick={() => changeTheme('bootstrap4-dark-purple', 'dark')}
+                        >
+                            <img
+                                src="/layout/images/themes/bootstrap4-dark-purple.svg"
+                                className="w-2 h-2"
+                                alt="Bootstrap Dark Purple"
+                            />
                             <span className='text-sm'>Dark Purple</span>
-                            </button>
+                        </button>
                     </div>
                     <div className="flex gap-2 p-2">
-                            <button
-                                className="flex flex-1 items-center gap-2 p-link w-2 h-2"
-                                onClick={() => changeTheme('mdc-light-indigo', 'light')}
-                            >
-                                <img
-                                    src="/layout/images/themes/md-light-indigo.svg"
-                                    className="w-2 h-2"
-                                    alt="Material Light Indigo"
-                                />
+                        <button
+                            className="flex flex-1 items-center gap-2 p-link w-2 h-2"
+                            onClick={() => changeTheme('mdc-light-indigo', 'light')}
+                        >
+                            <img
+                                src="/layout/images/themes/md-light-indigo.svg"
+                                className="w-2 h-2"
+                                alt="Material Light Indigo"
+                            />
                             <span className='text-sm'>Light Indigo</span>
-                            </button>
-                            <button
-                                className="flex flex-1 items-center gap-2 p-link w-2 h-2"
-                                onClick={() => changeTheme('mdc-light-deeppurple', 'light')}
-                            >
-                                <img
-                                    src="/layout/images/themes/md-light-deeppurple.svg"
-                                    className="w-2 h-2"
-                                    alt="Material Light Deep Purple"
-                                />
+                        </button>
+                        <button
+                            className="flex flex-1 items-center gap-2 p-link w-2 h-2"
+                            onClick={() => changeTheme('mdc-light-deeppurple', 'light')}
+                        >
+                            <img
+                                src="/layout/images/themes/md-light-deeppurple.svg"
+                                className="w-2 h-2"
+                                alt="Material Light Deep Purple"
+                            />
                             <span className='text-sm'>Light Purple 2</span>
-                            </button>
+                        </button>
                     </div>
                     <div className="flex gap-2 p-2">
-                            <button
-                                className="flex flex-1 items-center gap-2 p-link w-2 h-2"
-                                onClick={() => changeTheme('mdc-dark-indigo', 'dark')}
-                            >
-                                <img
-                                    src="/layout/images/themes/md-dark-indigo.svg"
-                                    className="w-2 h-2"
-                                    alt="Material Dark Indigo"
-                                />
+                        <button
+                            className="flex flex-1 items-center gap-2 p-link w-2 h-2"
+                            onClick={() => changeTheme('mdc-dark-indigo', 'dark')}
+                        >
+                            <img
+                                src="/layout/images/themes/md-dark-indigo.svg"
+                                className="w-2 h-2"
+                                alt="Material Dark Indigo"
+                            />
                             <span className='text-sm'>Dark Indigo</span>
-                            </button>
-                            <button
-                                className="flex flex-1 items-center gap-2 p-link w-2 h-2"
-                                onClick={() => changeTheme('mdc-dark-deeppurple', 'dark')}
-                            >
-                                <img
-                                    src="/layout/images/themes/md-dark-deeppurple.svg"
-                                    className="w-2 h-2"
-                                    alt="Material Dark Deep Purple"
-                                />
+                        </button>
+                        <button
+                            className="flex flex-1 items-center gap-2 p-link w-2 h-2"
+                            onClick={() => changeTheme('mdc-dark-deeppurple', 'dark')}
+                        >
+                            <img
+                                src="/layout/images/themes/md-dark-deeppurple.svg"
+                                className="w-2 h-2"
+                                alt="Material Dark Deep Purple"
+                            />
                             <span className='text-sm'>Dark Purple 2</span>
-                            </button>
+                        </button>
                     </div>
                 </div>
 
                 <h5>Language</h5>
-                <div className="grid">
-
+                <div className="flex flex-column gap-3">
+                    {languages.map((lang) => {
+                        return (
+                            <div key={lang.code} className="flex align-items-center">
+                                <RadioButton inputId={lang.code} name="lang" value={lang.code} checked={locale === lang.code} onChange={(e)=>handleNavigation(e.value)}/>
+                                <label htmlFor={lang.code} className="ml-2 hover:cursor-pointer">{lang.name}</label>
+                            </div>
+                        );
+                    })}
                 </div>
             </Sidebar>
         </>

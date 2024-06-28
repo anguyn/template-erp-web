@@ -18,7 +18,7 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-    background-color: white;
+  background-color: white;
   @apply dark:bg-black bg-white;
 }
 
@@ -49,6 +49,57 @@ body {
   }
 
   .loader {
+    width: 60px;
+    aspect-ratio: 1;
+    animation: l5-0 1s infinite steps(1);
+  }
+
+  .loader::before,
+  .loader::after {
+    content: "";
+    position: absolute;
+    inset: 0 50% 50% 0;
+    transform-origin: bottom right;
+    animation:
+      l5-1 0.5s infinite linear alternate,
+      l5-2 0.5s infinite steps(1) alternate;
+  }
+
+  .loader::after {
+    --s: -1, -1;
+  }
+
+  @keyframes l5-0 {
+    0% {
+      transform: scale(1, 1) rotate(0deg)
+    }
+
+    50% {
+      transform: scale(1, -1) rotate(90deg)
+    }
+  }
+
+  @keyframes l5-1 {
+    0% {
+      transform: scale(var(--s, 1)) perspective(150px) rotateX(0deg)
+    }
+
+    100% {
+      transform: scale(var(--s, 1)) perspective(150px) rotateX(180deg)
+    }
+  }
+
+  @keyframes l5-2 {
+    0% {
+      background: #25b09b
+    }
+
+    50% {
+      background: #514b82
+    }
+  }
+
+  .loader-wrapper {
     bottom: 0;
     left: 0;
     overflow: hidden;
@@ -218,8 +269,7 @@ body {
   }
 
   td.progress-cell progress {
-    @apply flex w-2/5 self-center
-      lg:w-full;
+    @apply flex w-2/5 self-center lg:w-full;
   }
 
   td.image-cell {

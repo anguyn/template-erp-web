@@ -14,20 +14,15 @@ import { Button } from 'primereact/button';
 import { Menu } from 'primereact/menu';
 import { InputText } from 'primereact/inputtext';
 import { Dialog } from 'primereact/dialog';
+
 import withAuth from '@/utils/withAuth';
 import inventoryApi from '@/service/ServiceLayer/inventoryApi';
 import toast from 'react-hot-toast';
+import { isoToDateFormat } from '@/utils/date';
+import { formatNumberWithComma } from '@/utils/number';
+import { capitalizeWords } from '@/utils/text'
 
-const filterOptionTemplate = (option) => {
-    return (
-        <>
-            <div className="flex align-items-center gap-2">
-                <Checkbox checked={option.selected}></Checkbox>
-                <div>{option.name}</div>
-            </div>
-        </>
-    );
-};
+import purchaseApi from '@/service/ServiceLayer/purchaseApi';
 
 const GoodsReceipt = () => {
     const [selectedFilterOption, setSelectedFilterOption] = useState(null);
@@ -47,46 +42,73 @@ const GoodsReceipt = () => {
         () => [
             {
                 header: 'Document No.',
-                field: 'DocNo',
+                field: 'DocNum',
                 sortable: true,
                 className: 'text-center',
                 minWidth: '12rem',
-                filterField: 'DocNo',
+                filterField: 'DocNum',
                 filter: true,
                 showFilterMatchModes: true,
+                filterElement: ''
+            },
+            {
+                header: "Vendor Code",
+                field: 'CardCode',
+                sortable: true,
+                className: 'text-center',
+                minWidth: '12rem',
+                filterField: 'CardCode',
+                filter: true,
+                showFilterMatchModes: true,
+                body: '',
+                filterElement: ''
+            },
+            {
+                header: "Vendor Name",
+                field: 'CardName',
+                sortable: true,
+                className: 'text-center',
+                minWidth: '12rem',
+                filterField: 'CardName',
+                filter: true,
+                showFilterMatchModes: true,
+                body: '',
                 filterElement: ''
             },
             {
                 header: 'Posting Date',
-                field: 'PostingDate',
+                field: 'DocDate',
                 sortable: true,
                 className: 'text-center',
                 minWidth: '12rem',
-                filterField: 'PostingDate',
+                filterField: 'DocDate',
                 filter: true,
                 showFilterMatchModes: true,
+                body: (product) => <>{isoToDateFormat(product?.DocDate)}</>,
                 filterElement: ''
             },
             {
                 header: 'Document Date',
-                field: 'DocumentDate',
+                field: 'DocDueDate',
                 sortable: true,
                 className: 'text-center',
                 minWidth: '14rem',
-                filterField: 'DocumentDate',
+                filterField: 'DocDueDate',
                 filter: true,
                 showFilterMatchModes: false,
+                body: (product) => <>{isoToDateFormat(product?.DocDueDate)}</>,
                 filterElement: ''
             },
             {
                 header: 'Document Total',
-                field: 'DocumentTotal',
+                field: 'DocTotal',
                 sortable: true,
                 className: 'text-right',
                 minWidth: '14rem',
-                filterField: 'DocumentTotal',
+                filterField: 'DocTotal',
                 filter: true,
                 showFilterMatchModes: true,
+                body: (product) => <>{formatNumberWithComma(product?.DocTotal)}</>,
                 filterElement: ''
             },
         ],
@@ -130,6 +152,17 @@ const GoodsReceipt = () => {
 
         setGRFilters(_filters);
         setGlobalFilterValue(value);
+    };
+
+    const filterOptionTemplate = (option) => {
+        return (
+            <>
+                <div className="flex align-items-center gap-2">
+                    <Checkbox checked={option.selected}></Checkbox>
+                    <div>{option.name}</div>
+                </div>
+            </>
+        );
     };
 
     const codeBodyTemplate = (rowData) => {
@@ -210,34 +243,10 @@ const GoodsReceipt = () => {
 
     const getAllGoodsReceipt = async () => {
         try {
-            setLoading(true)
-            const res = [
-                {
-                    DocNo: 80,
-                    PostingDate: '12/02/2023',
-                    DocumentDate: '12/02/2023',
-                    DocumentTotal: '145',
-                },
-                {
-                    DocNo: 31,
-                    PostingDate: '25/03/2023',
-                    DocumentDate: '26/03/2023',
-                    DocumentTotal: '89',
-                },
-                {
-                    DocNo: 58,
-                    PostingDate: '08/03/2023',
-                    DocumentDate: '06/03/2023',
-                    DocumentTotal: '75',
-                },
-                {
-                    DocNo: 32,
-                    PostingDate: '15/04/2023',
-                    DocumentDate: '02/05/2023',
-                    DocumentTotal: '49',
-                },
-            ];
-            setGoodsReceiptData(res);
+            setLoading(true);
+            const res = await purchaseApi.getAllGoodReceiptPODoc();
+            setGoodsReceiptData(res?.value);
+            console.log("Ga gì: ", res?.value)
         } catch (e) {
             console.error(e);
             toast.error("There is an error occured.")

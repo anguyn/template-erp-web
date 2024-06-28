@@ -1,0 +1,101 @@
+{
+    "Index": {
+        "title": "Home",
+        "description": "<p>Only the minimum of <code>{locale}</code> messages are loaded to render this page.</p><p>These namespaces are available:</p>"
+    },
+    "Navigation": {
+        "index": "Home",
+        "about": "About",
+        "switchLocale": "Switch to {locale, select, de {German} en {English} other {Unknown}}"
+    },
+    "NotFound": {
+        "title": "Sorry, this page could not be found."
+    },
+    "PageLayout": {
+        "pageTitle": "next-intl"
+    },
+    "General": {
+        "createDocument": "Create Document",
+        "documentType": "Document Type",
+        "documentNo": "Document no.",
+        "enterDocumentNo": "Enter document no.",
+        "status": "Status",
+        "selectStatus": "Select status",
+        "delivery": "Delivery",
+        "goodsReceiptPO": "Goods Receipt PO",
+        "searchKeyWord": "Search key word",
+        "enterKeyWord": "Enter key word",
+        "customerCode": "Customer code",
+        "enterCustomerCode": "Enter customer code",
+        "customerName": "Customer name",
+        "enterCustomerName": "Enter customer name",
+        "postingDate": "Posting Date",
+        "documentTotal": "Document Total",
+        "enterDocumentTotal": "Enter document total",
+        "documentTotalFC": "Document Total (FC)",
+        "enterDocumentTotalFC": "Enter document total (FC)",
+        "grossProfitTotal": "Gross profit total",
+        "enterGrossProfitTotal": "Enter gross profit",
+        "grossProfitTotalFC": "Gross profit total (FC)",
+        "enterGrossProfitTotalFC": "Enter gross profit (FC)",
+        "generalInfo": "General Information",
+        "content": "Content",
+        "logistics": "Logistics",
+        "accounting": "Accounting",
+        "attachment": "Attachment",
+        "create": "Create",
+        "export": "Export",
+        "filter": "Filter",
+        "filterOption": "Fitler option",
+        "clear": "Clear",
+        "keywordSearch": "Keyword Search",
+        "add&view": "Add & View",
+        "add&new": "Add & New",
+        "add&back": "Add & Back"
+    },
+    "Languages": {
+        "english": "English",
+        "vietnamese": "Vietnamese",
+        "france": "France"
+    },
+    "CreateDelivery": {
+        "customer": "Customer",
+        "customerName": "Customer Name",
+        "contactPerson": "Contact Person",
+        "customerRefNo": "Customer Ref No,",
+        "seriesNo": "Series/No",
+        "postingDate": "Posting Date",
+        "deliveryDate": "Delivery Date",
+        "documentDate": "Document Date",
+        "remark": "Remark",
+        "salesEmployee": "Sales Employee",
+        "owner": "Owner"
+    },
+    "CreateGoodsReceiptPO": {
+        "customer": "Customer",
+        "customerName": "Customer Name",
+        "contactPerson": "Contact Person",
+        "customerRefNo": "Customer Ref No,",
+        "seriesNo": "Series/No",
+        "postingDate": "Posting Date",
+        "deliveryDate": "Delivery Date",
+        "documentDate": "Document Date",
+        "remark": "Remark",
+        "salesEmployee": "Sales Employee",
+        "owner": "Owner"
+    },
+    "DeliveryList": {
+        "deliveryList": "Delivery List",
+        "deliveryDate": "Delivery Date",
+        "salesEmployeeName": "Sales Employee Name",
+        "enterSalesEmployeeName": "Enter sales employee name"
+    },
+    "StrictTypes": {
+        "nested": {
+            "hello": "Hello",
+            "another": {
+                "level": "Level"
+            }
+        }
+    }
+}

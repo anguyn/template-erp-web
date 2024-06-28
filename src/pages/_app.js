@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { NextIntlClientProvider } from 'next-intl';
+import {useRouter} from 'next/router';
 import dynamic from 'next/dynamic';
 import { ThemeProvider as NextThemeProvider } from 'next-themes';
 import PrimeReact from 'primereact/api';
@@ -18,6 +20,7 @@ const Toaster = dynamic(() => import('react-hot-toast').then((c) => c.Toaster), 
 });
 
 export default function MyApp({ Component, pageProps }) {
+    const router = useRouter();
     const layoutConfig = useLayoutStore((state) => state.layoutConfig, shallow);
 
     useEffect(() => {
@@ -32,7 +35,11 @@ export default function MyApp({ Component, pageProps }) {
 
     if (Component.getLayout) {
         return (
-            <>
+            <NextIntlClientProvider
+                locale={router.locale}
+                timeZone="Europe/Vienna"
+                messages={pageProps.messages}
+            >
                 {Component.getLayout(
                     <NextThemeProvider>
                         <>
@@ -62,37 +69,43 @@ export default function MyApp({ Component, pageProps }) {
                         </>
                     </NextThemeProvider>
                 )}
-            </>
+            </NextIntlClientProvider>
         );
     } else {
         return (
-            <NextThemeProvider>
-                <Layout>
-                    <Component {...pageProps} />
-                    <Toaster
-                        position="top-center"
-                        reverseOrder={false}
-                        gutter={8}
-                        containerClassName=""
-                        containerStyle={{}}
-                        toastOptions={{
-                            className: '',
-                            duration: 3000,
-                            style: {
-                                background: '#363636',
-                                color: '#fff',
-                            },
-                            success: {
+            <NextIntlClientProvider
+                locale={router.locale}
+                timeZone="Europe/Vienna"
+                messages={pageProps.messages}
+            >
+                <NextThemeProvider>
+                    <Layout>
+                        <Component {...pageProps} />
+                        <Toaster
+                            position="top-center"
+                            reverseOrder={false}
+                            gutter={8}
+                            containerClassName=""
+                            containerStyle={{}}
+                            toastOptions={{
+                                className: '',
                                 duration: 3000,
-                                theme: {
-                                    primary: 'green',
-                                    secondary: 'black',
+                                style: {
+                                    background: '#363636',
+                                    color: '#fff',
                                 },
-                            },
-                        }}
-                    />
-                </Layout>
-            </NextThemeProvider>
+                                success: {
+                                    duration: 3000,
+                                    theme: {
+                                        primary: 'green',
+                                        secondary: 'black',
+                                    },
+                                },
+                            }}
+                        />
+                    </Layout>
+                </NextThemeProvider>
+            </NextIntlClientProvider>
         );
     }
 }

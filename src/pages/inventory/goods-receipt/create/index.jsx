@@ -62,7 +62,10 @@ const CreateGoodsReceipt = () => {
             PriceAfterDiscount: '',
             Total: '',
             Warehouse: '',
-            UoMCode: ''
+            UoMCode: '',
+            BaseType: -1,
+            BaseEntry: null,
+            BaseLine: null
         }
     ]);
     const [loading, setLoading] = useState(false);
@@ -157,7 +160,7 @@ const CreateGoodsReceipt = () => {
                 <p className={`truncate`}>{product.ItemNo && product.ItemNo}
                     {product.Item.name && " - " + product.Item.name}</p>
             </div>
-            <Button icon="pi pi-list" aria-label="Choose" onClick={() => { setSelectedItemRow(product); setItemSelectModalOpen(true) }} />
+            <Button icon="pi pi-list" label="Choose" onClick={() => { setSelectedItemRow(product); setItemSelectModalOpen(true) }} />
         </div>;
     };
 
@@ -243,7 +246,7 @@ const CreateGoodsReceipt = () => {
         const handleEditUoMCode = (e) => {
             setContentData(prev => (contentData.map(content => ({ ...content, UoMCode: e.target.value }))));
         }
-        return <InputText inputStyle={{ textAlign: 'right' }} className="w-full p-inputtext-sm" value={product.UoMCode} onChange={handleEditUoMCode} />;
+        return <InputText inputstyle={{ textAlign: 'right' }} className="w-full p-inputtext-sm" value={product.UoMCode} onChange={handleEditUoMCode} />;
     };
 
     const contentColumns = useMemo(
@@ -322,7 +325,10 @@ const CreateGoodsReceipt = () => {
             PriceAfterDiscount: '',
             Total: '',
             Warehouse: '',
-            UoMCode: ''
+            UoMCode: '',
+            BaseType: -1,
+            BaseEntry: null,
+            BaseLine: null
         }]));
     }
 
@@ -430,11 +436,11 @@ const CreateGoodsReceipt = () => {
                             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                 <div className="flex flex-column gap-2">
                                     <label className='font-semibold'>Remark</label>
-                                    <InputTextarea autoresize={true} rows={2} />
+                                    <InputTextarea autoResize rows={2} />
                                 </div>
                                 <div className="flex flex-column gap-2">
                                     <label className='font-semibold'>Journal Remark</label>
-                                    <InputTextarea autoresize={true} rows={2} />
+                                    <InputTextarea autoResize rows={2} />
                                 </div>
                             </div>
                         </section>
@@ -499,7 +505,7 @@ const CreateGoodsReceipt = () => {
                     </div>
                 </div>
             </div>
-            <FeatureBar style={{ width: `${containerWidth}px`, maxWidth: `${containerWidth}px` }} className={`!max-w-[${containerWidth}px] !w-[${containerWidth}px]`} />
+            <FeatureBar docType="Goods Receipt PO" style={{ width: `${containerWidth}px`, maxWidth: `${containerWidth}px` }} className={`!max-w-[${containerWidth}px] !w-[${containerWidth}px]`}/>
             <ItemList itemSelectModalOpen={itemSelectModalOpen} setItemSelectModalOpen={(value) => setItemSelectModalOpen(value)} itemList={itemList} selectedItemRow={selectedItemRow?.Item} setItem={handleSetItem} />
             {/* <Dialog header="Delete items" visible={visible} position={position} style={{ width: '50vw' }} onHide={() => setVisible(false)} footer={footerContent} draggable={false} resizable={false}>
                 <h5 className="m-0">

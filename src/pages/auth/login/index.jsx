@@ -5,6 +5,7 @@ import { Checkbox } from 'primereact/checkbox';
 import { Button } from 'primereact/button';
 import { Password } from 'primereact/password';
 import { useLayoutStore } from '@/stores/layoutStore';
+import { useCompanyStore } from '@/stores/companyStore';
 import { shallow } from 'zustand/shallow';
 import { InputText } from 'primereact/inputtext';
 import { Dropdown } from 'primereact/dropdown';
@@ -15,6 +16,7 @@ import Cookies from 'js-cookie';
 
 import { Company } from '@/service/GeneralData/Company';
 import usersApi from '@/service/ServiceLayer/authApi';
+import globalApi from '@/service/ServiceLayer/globalApi';
 
 import Loader from '@/components/Loader';
 
@@ -27,6 +29,7 @@ const LoginPage = () => {
     const [checked, setChecked] = useState(false);
 
     const { layoutConfig } = useLayoutStore((state) => state, shallow);
+    const { setCompanyInfo, setCurrencies } = useCompanyStore((state) => state, shallow);
 
     const router = useRouter();
 
@@ -103,10 +106,18 @@ const LoginPage = () => {
                         const res = await usersApi.login(selectedCompany?.code, username, password);
                         console.log(res);
                         // Set remember-me cookie
-                        Cookies.set('user', username, { expires: 1 / 48 }); // 29 minutes and 30 seconds
+                        // Cookies.set('user', username, { expires: 1 / 48 }); // 29 minutes and 30 seconds
+                        Cookies.set('user', username, { expires: 0.125 }); // 180 phút
+                        const companyInfo = await globalApi.getCompanyInfo();
+                        const currencies = await globalApi.getAllCurrency();
+                        console.log("Company info: ", companyInfo);
+                        console.log("Currencies: ", currencies.value);
+                        setCompanyInfo(companyInfo);
+                        setCurrencies(currencies?.value || []);
                         toast.success('Login successfully!');
                         router.push('/');
                     } catch (error) {
+                        console.error(error);
                         if (error.response?.status === 401) toast.error('Unauthorized account');
                         else toast.error(error.response?.statusText);
                         return;
@@ -125,6 +136,31 @@ const LoginPage = () => {
             // router.push('/')
         }
     };
+
+    // const handleSignIn = async () => {
+    //     try {
+    //         const response = await fetch('/api/ssb1s', {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //             },
+    //             body: JSON.stringify({
+    //                 CompanyDB: selectedCompany?.code,
+    //                 Password: username,
+    //                 UserName: password,
+    //             }),
+    //         });
+
+    //         if (!response.ok) {
+    //             throw new Error(`HTTP error! status: ${response.status}`);
+    //         }
+
+    //         const data = await response.json();
+    //         console.log('Login successful:', data);
+    //     } catch (error) {
+    //         console.error('Login failed:', error);
+    //     }
+    // };
 
     const handleFormKeyPress = (event) => {
         if (event.key === 'Enter') {
@@ -167,7 +203,7 @@ const LoginPage = () => {
                 className="flex flex-column align-items-center justify-content-center"
             >
                 <img
-                    src={`/images/grant-thornton-logo.png`}
+                    src={`/images/grant-thornton-white-logo.png`}
                     alt="Grant Thornton Logo"
                     className={`${layoutConfig.colorScheme === 'dark' ? 'invert' : null
                         } mb-5 w-2 flex-shrink-0`}
@@ -282,7 +318,7 @@ const LoginPage = () => {
             </form>
             {isLoading && (
                 <>
-                    <div className="absolute top-0 left-0 w-full h-full backdrop-blur-sm bg-[rgba(4,4,4,0.65)]"></div>
+                    <div className="absolute top-0 left-0 w-full h-full backdrop-blur-lg bg-[rgba(202,202,202,0.65)]"></div>
                     <Loader />
                 </>
             )}

@@ -6,6 +6,8 @@ import { classNames } from 'primereact/utils';
 import usersApi from '@/service/ServiceLayer/authApi';
 import { useLayoutStore } from '@/stores/layoutStore';
 import { shallow } from 'zustand/shallow';
+import toast from 'react-hot-toast';
+import Cookies from 'js-cookie';
 
 const AppTopbar = forwardRef((props, ref) => {
     const { layoutState, layoutConfig, onMenuToggle, showProfileSidebar } = useLayoutStore(
@@ -13,11 +15,25 @@ const AppTopbar = forwardRef((props, ref) => {
         shallow
     );
 
+    const router = useRouter();
+
     const menubuttonRef = useRef(null);
     const topbarmenuRef = useRef(null);
     const topbarmenubuttonRef = useRef(null);
 
     const menuRight = useRef(null);
+
+    const handleSignOut = async () => {
+        try {
+            const res = await usersApi.logout();
+            Cookies.remove('user');
+            toast.success("Log out successfully.");
+            router.push(('/auth/login'))
+        } catch (error) {
+            console.error(error);
+            toast.error("Error");
+        }
+    }
 
     const items = [
         {
@@ -46,7 +62,7 @@ const AppTopbar = forwardRef((props, ref) => {
                     label: 'Sign Out',
                     icon: 'pi pi-fw pi-sign-in',
                     command: () => {
-                        console.log('Sign Out');
+                        handleSignOut();
                     },
                 },
             ],

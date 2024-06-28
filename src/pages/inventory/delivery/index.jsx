@@ -1,6 +1,9 @@
 "use client"
 import React, { useCallback, useState, useEffect, useRef, useMemo } from 'react';
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import salesApi from '@/service/ServiceLayer/salesApi';
+
 import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { Checkbox } from 'primereact/checkbox';
@@ -16,9 +19,15 @@ import { ListBox } from 'primereact/listbox';
 import { Menu } from 'primereact/menu';
 import { MultiSelect } from 'primereact/multiselect';
 import { Tag } from 'primereact/tag';
+
 import withAuth from '@/utils/withAuth';
 import inventoryApi from '@/service/ServiceLayer/inventoryApi';
 import toast from 'react-hot-toast';
+import pick from "@/utils/pick"
+
+import { isoToDateFormat } from '@/utils/date';
+import { formatNumberWithComma } from '@/utils/number';
+import { capitalizeWords } from '@/utils/text';
 
 const filterOptionTemplate = (option) => {
     return (
@@ -31,7 +40,12 @@ const filterOptionTemplate = (option) => {
     );
 };
 
-const Delivery = () => {
+const Delivery = ({ initialData }) => {
+    const { locale } = useRouter();
+    console.log(initialData);
+    const t = useTranslations('DeliveryList');
+    const tG = useTranslations('General');
+    const [dataList, setDataList] = useState([]);
     const [selectedFilterOption, setSelectedFilterOption] = useState(null);
     const [statuses] = useState(['Unqualified', 'Qualified', 'New', 'Negotiation', 'Renewal']);
     const [filterOptions, setFilterOptions] = useState([
@@ -84,84 +98,84 @@ const Delivery = () => {
     const deliveryColumns = useMemo(
         () => [
             {
-                header: 'Document No.',
-                field: 'DocNo',
+                header: capitalizeWords(tG("documentNo")),
+                field: 'DocNum',
                 sortable: true,
                 className: 'text-center',
                 minWidth: '12rem',
-                filterField: 'DocNo',
+                filterField: 'DocNum',
                 filter: true,
                 showFilterMatchModes: true,
                 body: '',
                 filterElement: ''
             },
             {
-                header: 'Customer Code',
-                field: 'CustomerCode',
+                header: capitalizeWords(tG("customerCode")),
+                field: 'CardCode',
                 sortable: true,
                 className: 'text-center',
                 minWidth: '12rem',
-                filterField: 'CustomerCode',
+                filterField: 'CardCode',
                 filter: true,
                 showFilterMatchModes: true,
                 body: '',
                 filterElement: ''
             },
             {
-                header: 'Customer Name',
-                field: 'CustomerName',
+                header: capitalizeWords(tG("customerName")),
+                field: 'CardName',
                 sortable: true,
                 className: 'text-center',
                 minWidth: '12rem',
-                filterField: 'CustomerName',
+                filterField: 'CardName',
                 filter: true,
                 showFilterMatchModes: true,
                 body: '',
                 filterElement: ''
             },
             {
-                header: 'Posting Date',
-                field: 'PostingDate',
+                header: capitalizeWords(tG("postingDate")),
+                field: 'DocDate',
                 sortable: true,
                 className: 'text-center',
                 minWidth: '12rem',
-                filterField: 'PostingDate',
+                filterField: 'DocDate',
                 filter: true,
                 showFilterMatchModes: true,
-                body: '',
+                body: (product) => <>{isoToDateFormat(product?.DocDate)}</>,
                 filterElement: ''
             },
             {
-                header: 'Delivery Date',
-                field: 'DeliveryDate',
+                header: t("deliveryDate"),
+                field: 'DocDueDate',
                 sortable: true,
                 className: 'text-center',
                 minWidth: '14rem',
-                filterField: 'DeliveryDate',
+                filterField: 'DocDueDate',
                 filter: true,
                 showFilterMatchModes: false,
-                body: '',
+                body: (product) => <>{isoToDateFormat(product?.DocDueDate)}</>,
                 filterElement: ''
             },
             {
-                header: 'Document Total',
-                field: 'DocumentTotal',
+                header: capitalizeWords(tG("documentTotal")),
+                field: 'DocTotal',
                 sortable: true,
                 className: 'text-right',
                 minWidth: '14rem',
-                filterField: 'DocumentTotal',
+                filterField: 'DocTotal',
                 filter: true,
                 showFilterMatchModes: true,
-                body: '',
+                body: (product) => <>{formatNumberWithComma(product?.DocTotal)}</>,
                 filterElement: ''
             },
             {
-                header: 'Status',
-                field: 'Status',
+                header: capitalizeWords(tG("status")),
+                field: 'DocumentStatus',
                 sortable: true,
                 className: 'text-center',
                 minWidth: '14rem',
-                filterField: 'Status',
+                filterField: 'DocumentStatus',
                 filter: true,
                 showFilterMatchModes: true,
                 body: statusBodyTemplate,
@@ -239,13 +253,13 @@ const Delivery = () => {
                     <Button
                         type="button"
                         icon="pi pi-filter-slash"
-                        label="Clear"
+                        label={tG("clear")}
                         outlined
                         className="h-[2.8rem]"
                         // size="small"
                         onClick={() => initGRFilters()}
                     />
-                    <MultiSelect  value={visibleGRColumns} options={deliveryColumns} optionLabel="header" onChange={onColumnToggle} className="p-inputtext-sm w-full sm:w-20rem text-sm" display="chip" />
+                    <MultiSelect value={visibleGRColumns} options={deliveryColumns} optionLabel="header" onChange={onColumnToggle} className="p-inputtext-sm w-full sm:w-20rem text-sm" display="chip" />
                 </div>
                 <span className="p-input-icon-left">
                     <i className="pi pi-search" />
@@ -253,7 +267,7 @@ const Delivery = () => {
                         className="p-inputtext-sm text-base h-[2.8rem] w-full sm:w-auto"
                         value={globalFilterValue}
                         onChange={onGlobalFilterChange}
-                        placeholder="Keyword Search"
+                        placeholder={tG("keywordSearch")}
                     />
                 </span>
             </div>
@@ -264,46 +278,48 @@ const Delivery = () => {
 
     const getAllDelivery = async () => {
         try {
-            setLoading(true)
-            const res = [
-                {
-                    DocNo: 80,
-                    CustomerCode: 'C00001',
-                    CustomerName: 'Công ty TNHH A',
-                    PostingDate: '12/02/2023',
-                    DeliveryDate: '12/02/2023',
-                    DocumentTotal: '145',
-                    Status: 'New'
-                },
-                {
-                    DocNo: 31,
-                    CustomerCode: 'C00001',
-                    CustomerName: 'Công ty TNHH A',
-                    PostingDate: '25/03/2023',
-                    DeliveryDate: '26/03/2023',
-                    DocumentTotal: '89',
-                    Status: 'Unqualified'
-                },
-                {
-                    DocNo: 58,
-                    CustomerCode: 'C00002',
-                    CustomerName: 'Công ty TNHH B',
-                    PostingDate: '08/03/2023',
-                    DeliveryDate: '06/03/2023',
-                    DocumentTotal: '75',
-                    Status: 'Qualified'
-                },
-                {
-                    DocNo: 32,
-                    CustomerCode: 'C00002',
-                    CustomerName: 'Công ty TNHH B',
-                    PostingDate: '15/04/2023',
-                    DeliveryDate: '02/05/2023',
-                    DocumentTotal: '49',
-                    Status: 'Renewal'
-                },
-            ];
-            setDeliveryData(res);
+            setLoading(true);
+            const res = await salesApi.getAllDeliveryDoc();
+            // const res = [
+            //     {
+            //         DocNo: 80,
+            //         CustomerCode: 'C00001',
+            //         CustomerName: 'Công ty TNHH A',
+            //         PostingDate: '12/02/2023',
+            //         DeliveryDate: '12/02/2023',
+            //         DocumentTotal: '145',
+            //         Status: 'New'
+            //     },
+            //     {
+            //         DocNo: 31,
+            //         CustomerCode: 'C00001',
+            //         CustomerName: 'Công ty TNHH A',
+            //         PostingDate: '25/03/2023',
+            //         DeliveryDate: '26/03/2023',
+            //         DocumentTotal: '89',
+            //         Status: 'Unqualified'
+            //     },
+            //     {
+            //         DocNo: 58,
+            //         CustomerCode: 'C00002',
+            //         CustomerName: 'Công ty TNHH B',
+            //         PostingDate: '08/03/2023',
+            //         DeliveryDate: '06/03/2023',
+            //         DocumentTotal: '75',
+            //         Status: 'Qualified'
+            //     },
+            //     {
+            //         DocNo: 32,
+            //         CustomerCode: 'C00002',
+            //         CustomerName: 'Công ty TNHH B',
+            //         PostingDate: '15/04/2023',
+            //         DeliveryDate: '02/05/2023',
+            //         DocumentTotal: '49',
+            //         Status: 'Renewal'
+            //     },
+            // ];
+            setDeliveryData(res?.value);
+            console.log("Ga gì: ", res?.value)
         } catch (e) {
             console.error(e);
             toast.error("There is an error occured.")
@@ -467,13 +483,13 @@ const Delivery = () => {
         <div id="custom-section" className="flex flex-col relative" >
             <div className="w-full">
                 <div className="card">
-                    <h3>Delivery</h3>
+                    <h3>{t("deliveryList")}</h3>
                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 p-[10px]">
                         {
                             filterOptions.find(option => option.code === 'search')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Search key word</label>
-                                    <InputText placeholder="Enter key word" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">{capitalizeWords(tG("searchKeyWord"))}</label>
+                                    <InputText placeholder={tG("enterKeyWord")} className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -481,8 +497,8 @@ const Delivery = () => {
                         {
                             filterOptions.find(option => option.code === 'docNo')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Document No</label>
-                                    <InputText placeholder="Enter document no" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">{capitalizeWords(tG("documentNo"))}</label>
+                                    <InputText placeholder={tG("enterDocumentNo")} className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -490,8 +506,8 @@ const Delivery = () => {
                         {
                             filterOptions.find(option => option.code === 'customerCode')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Customer Code</label>
-                                    <InputText placeholder="Enter customer code" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">{capitalizeWords(tG("customerCode"))}</label>
+                                    <InputText placeholder={tG("enterCustomerCode")} className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -499,8 +515,8 @@ const Delivery = () => {
                         {
                             filterOptions.find(option => option.code === 'customerName')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Customer Name</label>
-                                    <InputText placeholder="Enter customer name" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">{capitalizeWords(tG("customerName"))}</label>
+                                    <InputText placeholder={tG("enterCustomerName")} className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -508,7 +524,7 @@ const Delivery = () => {
                         {
                             filterOptions.find(option => option.code === 'postingDate')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Posting Date</label>
+                                    <label className="font-semibold">{capitalizeWords(tG("postingDate"))}</label>
                                     <Calendar className="p-inputtext-sm text-base" showIcon />
                                 </div>
                             )
@@ -517,7 +533,7 @@ const Delivery = () => {
                         {
                             filterOptions.find(option => option.code === 'deliveryDate')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Delivery Date</label>
+                                    <label className="font-semibold">{capitalizeWords(t("deliveryDate"))}</label>
                                     <Calendar className="p-inputtext-sm text-base" showIcon />
                                 </div>
                             )
@@ -526,8 +542,8 @@ const Delivery = () => {
                         {
                             filterOptions.find(option => option.code === 'salesEmployeeName')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Sales Employee Name</label>
-                                    <InputText placeholder="Enter sales employee name" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">{capitalizeWords(t("salesEmployeeName"))}</label>
+                                    <InputText placeholder={t("enterSalesEmployeeName")} className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -535,8 +551,8 @@ const Delivery = () => {
                         {
                             filterOptions.find(option => option.code === 'status')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Status</label>
-                                    <Dropdown options={statuses} itemTemplate={statusItemTemplate} placeholder="Select status" className="p-column-filter p-inputtext-sm text-base" showClear />
+                                    <label className="font-semibold">{capitalizeWords(tG("status"))}</label>
+                                    <Dropdown options={statuses} itemTemplate={statusItemTemplate} placeholder={tG("selectStatus")} className="p-column-filter p-inputtext-sm text-base" showClear />
                                     {/* <InputText placeholder="Enter status" className="p-inputtext-sm text-base" /> */}
                                 </div>
                             )
@@ -545,8 +561,8 @@ const Delivery = () => {
                         {
                             filterOptions.find(option => option.code === 'docTotal')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Document Total</label>
-                                    <InputText placeholder="Enter document total" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">{capitalizeWords(tG("documentTotal"))}</label>
+                                    <InputText placeholder={tG("enterDocumentTotal")} className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -554,8 +570,8 @@ const Delivery = () => {
                         {
                             filterOptions.find(option => option.code === 'docTotalFC')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Document Total (FC)</label>
-                                    <InputText placeholder="Enter document total (FC)" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">{capitalizeWords(tG("documentTotalFC"))}</label>
+                                    <InputText placeholder={tG("enterDocumentTotalFC")} className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -563,8 +579,8 @@ const Delivery = () => {
                         {
                             filterOptions.find(option => option.code === 'grossProfitTotal')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Gross Profit Total</label>
-                                    <InputText placeholder="Enter gross total" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">{capitalizeWords(tG("grossProfitTotal"))}</label>
+                                    <InputText placeholder={tG("enterGrossProfitTotal")} className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -572,8 +588,8 @@ const Delivery = () => {
                         {
                             filterOptions.find(option => option.code === 'grossProfitTotalFC')?.selected && (
                                 <div className="flex flex-column gap-2">
-                                    <label className="font-semibold">Gross Profit Total (FC)</label>
-                                    <InputText placeholder="Enter gross total (FC)" className="p-inputtext-sm text-base" />
+                                    <label className="font-semibold">{capitalizeWords(tG("grossProfitTotalFC"))}</label>
+                                    <InputText placeholder={tG("enterGrossProfitTotalFC")} className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -582,7 +598,7 @@ const Delivery = () => {
                     <div className="flex justify-end gap-2 mt-2">
                         <div>
                             <Button
-                                label="Create"
+                                label={capitalizeWords(tG("create"))}
                                 severity="create"
                                 outlined
                                 onClick={() => router.push('/inventory/delivery/create')}
@@ -597,7 +613,7 @@ const Delivery = () => {
                                 popupAlignment="right"
                             />
                             <Button
-                                label="Export"
+                                label={capitalizeWords(tG("export"))}
                                 // size="small"
                                 onClick={(event) => exportMenu.current.toggle(event)}
                                 aria-controls="export-menu"
@@ -606,7 +622,7 @@ const Delivery = () => {
                         </div>
                         <div>
                             <Button
-                                label="Filter"
+                                label={capitalizeWords(tG("filter"))}
                                 className="mr-2"
                                 severity="filter"
                                 icon="pi pi-filter"
@@ -618,7 +634,7 @@ const Delivery = () => {
                     <section className="mt-4">
                         <DataTable
                             ref={deliveryT}
-                            id="goods-receipt-table"
+                            id="delivery-table"
                             value={deliveryData}
                             className="p-datatable-gridlines"
                             paginator
@@ -629,7 +645,7 @@ const Delivery = () => {
                             selection={selectedDelivery}
                             onSelectionChange={(e) => {
                                 const currentValue = e.value;
-                                setSelectedDelivery(e.value)
+                                setSelectedDelivery(currentValue)
                             }}
                             globalFilterFields={['DocNo', 'PostingDate', 'DocumentDate', 'DocumentTotal']}
                             dataKey="DocNo"
@@ -642,7 +658,7 @@ const Delivery = () => {
                             responsiveLayout="scroll"
                             sortMode="multiple"
                             removableSort
-                            emptyMessage="No goods receipt found."
+                            emptyMessage="No goods delivery found."
                             header={header}
                         >
                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
@@ -660,8 +676,8 @@ const Delivery = () => {
                                         className="text-right"
                                         filterElement={col.filterElement}
                                         body={col.body}
-                                        // filter
-                                        // filterElement={representativeFilterTemplate}
+                                    // filter
+                                    // filterElement={representativeFilterTemplate}
                                     />
                                 ))
                             }
@@ -671,7 +687,7 @@ const Delivery = () => {
                 </div>
             </div>
             {/* This is modal section */}
-            <Dialog header="Filter option" blockScroll visible={isFilterModalOpen} onHide={() => setIsFilterModalOpen(false)}
+            <Dialog header={tG("filterOption")} blockScroll visible={isFilterModalOpen} onHide={() => setIsFilterModalOpen(false)}
                 style={{ width: '50vw' }} breakpoints={{ '960px': '75vw', '641px': '100vw' }}>
                 <div clasName="m-0 p-2 pt-1">
                     {/* <div className="p-inputgroup flex-1 mt-1">
@@ -683,6 +699,35 @@ const Delivery = () => {
             </Dialog>
         </div>
     );
+};
+
+Delivery.messages = ['DeliveryList', 'General'];
+
+export const getServerSideProps = async (context) => {
+    const { locale } = context;
+    // const response = await salesApi.getAllDeliveryDoc();
+    // // console.log(response);
+
+    // return {
+    //     props: {
+    //         initialData: response,
+    //     },
+    // };
+
+    // console.log(context)
+
+    const response = await fetch('https://localhost:50000/b1s/v1/DeliveryNotes'); // Thay thế bằng API thực tế của bạn
+    const data = await response.json();
+
+    return {
+        props: {
+            initialData: { data },
+            messages: pick(
+                (await import(`../../../../messages/${locale}.json`)).default,
+                Delivery.messages
+            ),
+        },
+    };
 };
 
 export default withAuth(Delivery);

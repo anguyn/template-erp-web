@@ -1,0 +1,88 @@
+{
+    "Index": {
+        "title": "Home",
+        "description": "<p>Only the minimum of <code>{locale}</code> messages are loaded to render this page.</p><p>These namespaces are available:</p>"
+    },
+    "Navigation": {
+        "index": "Home",
+        "about": "About",
+        "switchLocale": "Switch to {locale, select, de {German} en {English} other {Unknown}}"
+    },
+    "NotFound": {
+        "title": "Sorry, this page could not be found."
+    },
+    "PageLayout": {
+        "pageTitle": "next-intl"
+    },
+    "General": {
+        "createDocument": "Tạo Chứng Từ",
+        "documentType": "Loại chứng từ",
+        "documentNo": "Số Chứng Từ",
+        "enterDocumentNo": "Nhập số chứng từ",
+        "status": "Trạng Thái",
+        "selectStatus": "Chọn trạng thái",
+        "delivery": "Phiếu Giao Hàng",
+        "goodsReceiptPO": "Phiếu Nhập Hàng Mua",
+        "searchKeyWord": "Tìm theo từ khoá",
+        "enterKeyWord": "Nhập từ khoá",
+        "customerCode": "Mã khách hàng",
+        "enterCustomerCode": "Nhập mã khách hàng",
+        "customerName": "Tên khách hàng",
+        "enterCustomerName": "Nhập tên khách hàng",
+        "postingDate": "Ngày hạch toán",
+        "documentTotal": "Tổng tiền",
+        "enterDocumentTotal": "Nhập tổng tiền",
+        "documentTotalFC": "Tổng tiền (FC)",
+        "enterDocumentTotalFC": "Nhập tổng tiền (FC)",
+        "grossProfitTotal": "Tổng lợi nhuận gộp",
+        "enterGrossProfitTotal": "Nhập tổng lợi nhuận gộp",
+        "grossProfitTotalFC": "Tổng lợi nhuận gộp (FC)",
+        "enterGrossProfitTotalFC": "Nhập tổng lợi nhuận gộp (FC)",
+        "generalInfo": "Thông Tin Chung",
+        "content": "Nội Dung",
+        "logistics": "Vận Chuyển",
+        "accounting": "Kế Toán",
+        "attachment": "Đính Kèm",
+        "create": "Tạo",
+        "export": "Xuất",
+        "filter": "Lọc",
+        "filterOption": "Tuỳ chọn lọc",
+        "clear": "Xoá bộ lọc",
+        "keywordSearch": "Keyword Search",
+        "add&view": "Tạo mới & Xem",
+        "add&new": "Tạo mới & Thêm mới",
+        "add&back": "Tạo mới & Trở lại"
+    },
+    "Languages": {
+        "english": "Tiếng Anh",
+        "vietnamese": "Tiếng Việt",
+        "france": "Tiếng Pháp"
+    },
+    "CreateDelivery": {
+        "customer": "Khách Hàng",
+        "customerName": "Tên Khách Hàng",
+        "contactPerson": "Người Liên Hệ",
+        "customerRefNo": "Mã Tham Chiếu Khách Hàng",
+        "seriesNo": "Số phiếu / Số",
+        "postingDate": "Ngày Hạch Toán",
+        "deliveryDate": "Ngày Giao Hàng",
+        "documentDate": "Ngày Chứng Từ",
+        "remark": "Ghi Chú",
+        "salesEmployee": "Nhân Viên Bán Hàng",
+        "owner": "Người Phụ Trách"
+    },
+    "DeliveryList": {
+        "deliveryList": "Danh sách phiếu giao hàng",
+      "deliveryDate": "Ngày giao hàng",
+      "salesEmployeeName": "Tên nhân viên bán hàng",
+      "enterSalesEmployeeName": "Nhập tên nhân viên bán hàng"
+    },
+    "StrictTypes": {
+        "nested": {
+            "hello": "Hello",
+            "another": {
+                "level": "Level"
+            }
+        }
+    }
+}
