@@ -20,11 +20,12 @@ const PurchaseTaxCodeList = (props) => {
   });
 
   const handleConfirmModal = () => {
-    toast.success("Confirm");
+    // toast.success("Confirm");
     // const choosenTaxCode = { ...selectedTaxCode };
-    console.log([...selectedTaxCode])
-    setTaxCode([...selectedTaxCode]);
+    // console.log([...selectedTaxCode])
+    setTaxCode({ ...selectedTaxCode });
     setTaxCodeSelectModalOpen(false);
+    setSelectedTaxCode(null);
   }
 
   const onGlobalFilterChange = (e) => {
@@ -52,33 +53,35 @@ const PurchaseTaxCodeList = (props) => {
     return (
       <div>
         <Button label="Cancel" icon="pi pi-times" onClick={() => setTaxCodeSelectModalOpen(false)} className="p-button-text" />
-        <Button label="Choose" disabled={selectedTaxCode?.length <= 0} icon="pi pi-check" onClick={handleConfirmModal} autoFocus />
+        <Button label="Choose" disabled={!selectedTaxCode} icon="pi pi-check" onClick={handleConfirmModal} autoFocus />
       </div>
     )
   };
 
   const handleHideModal = () => {
     setTaxCodeSelectModalOpen(false)
-    setSelectedTaxCode([]);
+    setSelectedTaxCode(null);
   }
 
   useEffect(() => {
     if (selectedTaxCodeRow && selectedTaxCodeRow.TaxCodeCode) {
       //     console.log("bà: ", selectedTaxCodeRow);
-      setSelectedTaxCode([selectedTaxCodeRow]);
+      setSelectedTaxCode(TaxCodeList?.find(tax => tax.Code == selectedTaxCodeRow.TaxCode));
     }
   }, [selectedTaxCodeRow])
 
   return (
     <Dialog
-      header="Select TaxCode"
+      header="Select Tax Code"
       visible={taxCodeSelectModalOpen}
       onHide={handleHideModal}
       maximizable
       style={{ width: '75vw', minHeight: '75vh' }}
       contentStyle={{ height: '75vh' }}
       breakpoints={{ '960px': '80vw', '641px': '100vw' }}
-      footer={renderDFooter}>
+      footer={renderDFooter}
+      blockScroll
+    >
       <div>
         <DataTable
           header={renderTHeader}
@@ -98,11 +101,15 @@ const PurchaseTaxCodeList = (props) => {
           onSelectionChange={(e) => setSelectedTaxCode(e.value)}
           dataKey="TaxCode"
         >
-          <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
+          <Column selectionMode="single" headerStyle={{ width: '3rem' }}></Column>
+          <Column field="Code" header="Tax Code"></Column>
+          <Column field="Name" header="Tax Name"></Column>
+          <Column field="Rate" header="Rate" body={(tax) => (<>{tax?.VatGroups_Lines[0]?.Rate ? tax?.VatGroups_Lines[0]?.Rate + " %" : ""}</>)}></Column>
+          {/* <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
           <Column field="TaxCode" header="Tax Code"></Column>
           <Column field="TaxCodeName" header="TaxCode Name"></Column>
           <Column field="TaxCodeClass" header="TaxCode Class" body={(rowData) => (<>{rowData.TaxCodeClass.substring(3)}</>)}></Column>
-          <Column field="QuantityOnStock" header="On Stock" body={(rowData) => (<>{formatNumberWithComma(rowData.QuantityOnStock)}</>)}></Column>
+          <Column field="QuantityOnStock" header="On Stock" body={(rowData) => (<>{formatNumberWithComma(rowData.QuantityOnStock)}</>)}></Column> */}
         </DataTable>
       </div>
     </Dialog>

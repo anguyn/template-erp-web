@@ -9,16 +9,16 @@ import { SplitButton } from 'primereact/splitbutton';
 
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/router';
-
-import purchaseApi from '@/service/ServiceLayer/purchaseApi';
-import salesApi from '@/service/ServiceLayer/salesApi';
+import { useTranslations } from 'next-intl';
 
 import { isoToDateFormat } from '@/utils/date';
 import { formatNumberWithComma } from '@/utils/number';
+import { capitalizeWords } from '@/utils/text';
 
 const FeatureBar = (props) => {
-    const { fatherLoading, currentContentLength, docType, selectedBPCode, className, style, handleCopyFrom, handleAddAndView } = props;
+    const { mode, fatherLoading, currentContentLength, docType, selectedBPCode, className, style, handleCopyFrom, handleAddAndView, handleUpdateDocumnent } = props;
 
+    const t = useTranslations("General")
     // console.log("Mệtmệt: ", docType);
     // console.log("Dô: ", selectedBPCode);
     const copyFromBtnRef = useRef();
@@ -26,21 +26,21 @@ const FeatureBar = (props) => {
 
     const functionGroup1 = [
         {
-            label: 'Add & View',
+            label: t("add&view"),
             icon: 'pi pi-eye',
             command: () => {
                 handleClickAddAndView();
             }
         },
         {
-            label: 'Add & New',
+            label: t("add&new"),
             icon: 'pi pi-plus-circle',
             command: () => {
                 handleClickAddAndNew()
             }
         },
         {
-            label: 'Add & Back',
+            label: t("add&back"),
             icon: 'pi pi-chevron-circle-left',
             command: () => {
                 handleClickAddAndBack();
@@ -364,6 +364,10 @@ const FeatureBar = (props) => {
         });
     }
 
+    const handleSaveDocument = () => {
+
+    }
+
     const documentDFooterContent = (
         <div>
             <Button label="Cancel" icon="pi pi-times" onClick={handleCloseDocumentModal} className="p-button-text" />
@@ -386,7 +390,7 @@ const FeatureBar = (props) => {
                 case "Delivery":
                     functionGroup = [
                         {
-                            label: 'Sales Quotations',
+                            label: capitalizeWords(t("salesQuotation")),
                             icon: 'pi pi-eye',
                             command: () => {
                                 setSelectedDocType("Sales Quotation");
@@ -394,7 +398,7 @@ const FeatureBar = (props) => {
                             }
                         },
                         {
-                            label: 'Sales Orders',
+                            label: capitalizeWords(t("salesOrder")),
                             icon: 'pi pi-plus-circle',
                             command: () => {
                                 setSelectedDocType("Sales Order");
@@ -407,16 +411,16 @@ const FeatureBar = (props) => {
                 case "Goods Receipt PO":
                     functionGroup = [
                         {
-                            label: 'Purchase Quotations',
-                            icon: 'pi pi-eye',
+                            label: capitalizeWords(t("purchaseQuotation")),
+                            icon: 'pi pi-file',
                             command: () => {
                                 setSelectedDocType("Purchase Quotation");
                                 setDocumentListDialogOpen(true);
                             }
                         },
                         {
-                            label: 'Purchase Orders',
-                            icon: 'pi pi-plus-circle',
+                            label: capitalizeWords(t("purchaseOrder")),
+                            icon: 'pi pi-file',
                             command: () => {
                                 setSelectedDocType("Purchase Order");
                                 setDocumentListDialogOpen(true);
@@ -433,7 +437,6 @@ const FeatureBar = (props) => {
     }, [selectedBPCode]);
 
     useEffect(() => {
-        console.log("Dô đi: ", selectedDocType);
         if (selectedBPCode && selectedDocType) {
             (async () => {
                 try {
@@ -442,19 +445,54 @@ const FeatureBar = (props) => {
                     const queryProps = {
                         filter: [`CardCode eq '${selectedBPCode}'`, "DocumentStatus eq 'bost_Open'"]
                     };
-                    console.log("mỉnh gỡ từ từ: ", queryProps)
                     switch (selectedDocType) {
                         case "Purchase Quotation":
-                            res = await purchaseApi.getAllPurchaseQuotation(queryProps);
+                            res = await fetch('/api/purchase/get-all-purchase-quotation', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                credentials: 'include',
+                                body: JSON.stringify(queryProps)
+                            });
+                            res = await res.json();
+                            // res = await purchaseApi.getAllPurchaseQuotation(queryProps);
                             break;
                         case "Purchase Order":
-                            res = await purchaseApi.getAllPurchaseOrder(queryProps);
+                            res = await fetch('/api/purchase/get-all-purchase-order', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                credentials: 'include',
+                                body: JSON.stringify(queryProps)
+                            });
+                            res = await res.json();
+                            // res = await purchaseApi.getAllPurchaseOrder(queryProps);
                             break;
                         case "Sales Quotation":
-                            res = await salesApi.getAllSalesQuotation(queryProps);
+                            res = await fetch('/api/sales/get-all-sales-quotation', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                credentials: 'include',
+                                body: JSON.stringify(queryProps)
+                            });
+                            res = await res.json();
+                            // res = await salesApi.getAllSalesQuotation(queryProps);
                             break;
                         case "Sales Order":
-                            res = await salesApi.getAllSalesOrder(queryProps);
+                            res = await fetch('/api/sales/get-all-sales-order', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                credentials: 'include',
+                                body: JSON.stringify(queryProps)
+                            });
+                            res = await res.json();
+                            // res = await salesApi.getAllSalesOrder(queryProps);
                             break;
                     }
                     console.log("Res nè má: ", res);
@@ -473,23 +511,38 @@ const FeatureBar = (props) => {
         <>
             <div style={style} className={`card fixed bottom-0 right-[2rem] shadow-2xl flex gap-2 justify-end items-center py-2 ${className}`}>
                 {
-                    docType && selectedBPCode && (
+                    docType && selectedBPCode && mode == "create" && (
                         <div>
                             <div className="block">
                                 <Menu model={copyFunctionGroup} popup ref={copyFromBtnRef} id="copy-from-menu" popupAlignment="right" />
-                                <Button label="Copy From" icon="pi pi-copy" className="mr-2" onClick={(event) => copyFromBtnRef.current.toggle(event)} aria-controls="copy-from-menu" aria-haspopup />
+                                <Button label={t("copyFrom")} icon="pi pi-copy" className="mr-2" onClick={(event) => copyFromBtnRef.current.toggle(event)} aria-controls="copy-from-menu" aria-haspopup />
                             </div>
                         </div>
                     )
                 }
-                <div>
-                    <div className="hidden sm:block">
-                        <SplitButton label="Add & View" disabled={fatherLoading} onClick={handleClickAddAndView} model={addFunctionGroup} />
-                    </div>
-                    <div className="block sm:hidden">
-                        <SplitButton label="Add" disabled={fatherLoading} onClick={handleClickAddAndView} model={addFunctionGroup} />
-                    </div>
-                </div>
+
+                {
+                    mode == "create" && (
+                        <div>
+                            <div className="hidden sm:block">
+                                <SplitButton label={t("add&view")} icon="pi pi-plus-circle" disabled={fatherLoading} onClick={handleClickAddAndView} model={addFunctionGroup} />
+                            </div>
+                            <div className="block sm:hidden">
+                                <SplitButton label={t("add")} disabled={fatherLoading} onClick={handleClickAddAndView} model={addFunctionGroup} />
+                            </div>
+                        </div>
+                    )
+                }
+
+                {
+                    mode == "view" && (
+                        <div>
+                            <div className="">
+                                <Button label={t("update")} severity="help" onClick={handleSaveDocument} />
+                            </div>
+                        </div>
+                    )
+                }
 
                 {/* <div className="hidden sm:block">
                     <SplitButton label="Save as Draft & View" onClick={handleClickFunctGroup2} model={functionGroup2} />

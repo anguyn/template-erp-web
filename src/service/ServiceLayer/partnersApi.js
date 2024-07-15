@@ -1,56 +1,43 @@
-import axiosClient from '../axiosClient';
-
-const url = `/BusinessPartners`;
+import buildQuery from "@/utils/buildQuery";
+const baseURL = `${process.env.NEXT_PUBLIC_SERVICE_LAYER_URL}/${process.env.NEXT_PUBLIC_ODATA_VERSION}/BusinessPartners`;
 
 const partnersApi = {
-    getAllPartners: (props) => {
-        // NOTE: query
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
-
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getAllPartners: async (props, cookies) => {
+        const query = buildQuery(props);  
 
         const options = {
+            method: 'GET',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
+            credentials: 'include' 
         };
 
-        return axiosClient().get(`${url + query}`, options);
+        const response = await fetch(`${baseURL}${query}`, options);
+
+        return response;
     },
 
-    getPartnerByCardCode: (code) => {
-        return axiosClient().get(`${url}('${code}')`);
-    },
+    getPartnerByCardCode: async (code, cookies) => {
+        const url = `${baseURL}('${code}')`;
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Cookie': cookies 
+            },
+            credentials: 'include' 
+        };
+
+        const response = await fetch(url, options);
+
+        return response;
+    }
 };
 
 export default partnersApi;

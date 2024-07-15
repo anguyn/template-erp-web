@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useRef } from 'react';
 import Head from 'next/head';
+import { ScrollTop } from 'primereact/scrolltop';
 import { useRouter } from 'next/router';
 import { useEventListener, useMountEffect, useUnmountEffect } from 'primereact/hooks';
 import { classNames, DomHandler } from 'primereact/utils';
@@ -10,10 +11,10 @@ import AppConfig from './AppConfig';
 import PrimeReact from 'primereact/api';
 import { useLayoutStore } from '@/stores/layoutStore';
 import { shallow } from 'zustand/shallow';
+import Loader from '@/components/Loader';
 
 const Layout = (props) => {
-    const { layoutState, layoutConfig, setLayoutState } = useLayoutStore((state) => state, shallow);
-    
+    const { layoutState, layoutConfig, setLayoutState, globalLoader } = useLayoutStore((state) => state, shallow);
     const topbarRef = useRef(null);
     const sidebarRef = useRef(null);
 
@@ -118,7 +119,7 @@ const Layout = (props) => {
     return (
         <React.Fragment>
             <Head>
-                <title>TSC - GTV Hubs</title>
+                <title>SAP B1 Web Client</title>
                 <meta charSet="UTF-8" />
                 <meta
                     name="description"
@@ -151,10 +152,21 @@ const Layout = (props) => {
                     {/* <AppFooter /> */}
                 </div>
                 <AppConfig />
+                <ScrollTop className="mb-6" />
                 <div className="layout-mask"></div>
             </div>
+            {
+                globalLoader && (
+                    <>
+                        <div className="absolute top-0 !z-[99999] left-0 w-full h-full backdrop-blur-md bg-[rgba(202,202,202,0.65)]"></div>
+                        <Loader />
+                    </>
+                )
+            }
         </React.Fragment>
     );
 };
+
+Layout.messages = ['PageLayout', 'Languages'];
 
 export default Layout;

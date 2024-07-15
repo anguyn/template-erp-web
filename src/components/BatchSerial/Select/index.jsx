@@ -326,6 +326,7 @@ function BatchSerialSelection(props) {
                                     scrollHeight="500px"
                                     virtualScrollerOptions={{ itemSize: 46 }}
                                 >
+                                    <Column header="No." body={(rowData, row) => (<>{row.rowIndex + 1 || 0}</>)}></Column>
                                     <Column field="BatchNum" header="Batch"></Column>
                                     <Column field="Quantity" header="Available Quantity" body={item => (<>{formatNumberWithComma(item?.Quantity)}</>)}></Column>
                                     <Column header="Selected Quantity" body={BatchSelectedQuantityTemplate}></Column>
@@ -345,6 +346,7 @@ function BatchSerialSelection(props) {
                                     scrollHeight="500px"
                                     virtualScrollerOptions={{ itemSize: 46 }}
                                 >
+                                    <Column header="No." body={<Skeleton />}></Column>
                                     <Column field="BatchNum" header="Batch" body={<Skeleton />}></Column>
                                     <Column field="Quantity" header="Available Quantity" body={<Skeleton />}></Column>
                                     <Column header="Selected Quantity" body={<Skeleton />}></Column>

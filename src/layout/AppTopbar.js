@@ -20,13 +20,22 @@ const AppTopbar = forwardRef((props, ref) => {
     const menubuttonRef = useRef(null);
     const topbarmenuRef = useRef(null);
     const topbarmenubuttonRef = useRef(null);
+    const topbarbackbuttonRef = useRef(null);
 
     const menuRight = useRef(null);
 
     const handleSignOut = async () => {
         try {
-            const res = await usersApi.logout();
+            const res = await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include'
+            });
             Cookies.remove('user');
+            Cookies.remove('B1SESSION');
+            Cookies.remove('ROUTEID');
             toast.success("Log out successfully.");
             router.push(('/auth/login'))
         } catch (error) {
@@ -69,11 +78,18 @@ const AppTopbar = forwardRef((props, ref) => {
         },
     ];
 
+    const backPreviousPage = () => {
+        router.back();
+    }
+
     useImperativeHandle(ref, () => ({
         menubutton: menubuttonRef.current,
         topbarmenu: topbarmenuRef.current,
         topbarmenubutton: topbarmenubuttonRef.current,
+        topbarbackbutton: topbarbackbuttonRef.current
     }));
+
+    const isHomePage = router.pathname === '/';
 
     return (
         <div className="layout-topbar">
@@ -102,6 +118,19 @@ const AppTopbar = forwardRef((props, ref) => {
             >
                 <i className="pi pi-ellipsis-v" />
             </button>
+
+            {
+                !isHomePage && (
+                    <button
+                        ref={topbarbackbuttonRef}
+                        type="button"
+                        className="p-link layout-menu-button layout-topbar-button"
+                        onClick={backPreviousPage}
+                    >
+                        <i className="pi pi-arrow-circle-left" />
+                    </button>
+                )
+            }
 
             <div
                 ref={topbarmenuRef}

@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
-import {useRouter} from 'next/router';
+import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 import { ThemeProvider as NextThemeProvider } from 'next-themes';
 import PrimeReact from 'primereact/api';
 import { useLayoutStore } from '@/stores/layoutStore';
 import { shallow } from 'zustand/shallow';
+import { locale, addLocale } from 'primereact/api';
 import '@ui5/webcomponents-icons/dist/AllIcons.js';
 import Layout from '@/layout/layout';
 import 'primereact/resources/primereact.css';
@@ -32,6 +33,31 @@ export default function MyApp({ Component, pageProps }) {
             });
         }
     }, []);
+
+    useEffect(() => {
+        fetch('/locale/vi/primereact.json')
+            .then(res => res.json())
+            .then(data => {
+                console.log("Ga gì má: ", data)
+                addLocale('vi', data);
+                if (router.locale == 'vi')  
+                    locale(router.locale);
+            });
+        fetch('/locale/en/primereact.json')
+            .then(res => res.json())
+            .then(data => {
+                addLocale('en', data);
+                if (router.locale == 'en')  
+                    locale(router.locale)
+            });
+        fetch('/locale/fr/primereact.json')
+            .then(res => res.json())
+            .then(data => {
+                addLocale('fr', data);
+                if (router.locale == 'fr')  
+                    locale(router.locale)
+            });
+    }, [router.locale]);
 
     if (Component.getLayout) {
         return (

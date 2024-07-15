@@ -288,6 +288,10 @@ body {
   .table-pagination {
     @apply px-6 py-3 border-t border-gray-100;
   }
+
+  .p-menuitem .active-route {
+    @apply !font-bold
+  }
 }
 
 .list-table table tr:hover td {

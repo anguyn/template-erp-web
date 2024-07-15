@@ -14,17 +14,15 @@ const SalesTaxCodeList = (props) => {
     const { taxCodeSelectModalOpen, setTaxCodeSelectModalOpen, taxCodeList: TaxCodeList, selectedTaxCodeRow, setTaxCode } = props;
     const [globalFilterValue, setGlobalFilterValue] = useState('');
     const [loading, setLoading] = useState(false);
-    const [selectedTaxCode, setSelectedTaxCode] = useState([]);
+    const [selectedTaxCode, setSelectedTaxCode] = useState(null);
     const [filters, setFilters] = useState({
         global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     });
 
-    console.log("ra gì nè: ", TaxCodeList)
-
     const handleConfirmModal = () => {
-        toast.success("Confirm");
+        // toast.success("Confirm");
         // const choosenTaxCode = { ...selectedTaxCode };
-        console.log({ ...selectedTaxCode })
+        // console.log({ ...selectedTaxCode })
         setTaxCode({ ...selectedTaxCode });
         setTaxCodeSelectModalOpen(false);
         setSelectedTaxCode(null);
@@ -55,7 +53,7 @@ const SalesTaxCodeList = (props) => {
         return (
             <div>
                 <Button label="Cancel" icon="pi pi-times" onClick={() => setTaxCodeSelectModalOpen(false)} className="p-button-text" />
-                <Button label="Choose" disabled={selectedTaxCode?.length <= 0} icon="pi pi-check" onClick={handleConfirmModal} autoFocus />
+                <Button label="Choose" disabled={!selectedTaxCode} icon="pi pi-check" onClick={handleConfirmModal} autoFocus />
             </div>
         )
     };
@@ -63,13 +61,11 @@ const SalesTaxCodeList = (props) => {
     const handleHideModal = () => {
         setSelectedTaxCode(null);
         setTaxCodeSelectModalOpen(false)
-        setSelectedTaxCode([]);
     }
 
     useEffect(() => {
-        if (selectedTaxCodeRow && selectedTaxCodeRow.TaxCodeCode) {
-            //     console.log("bà: ", selectedTaxCodeRow);
-            setSelectedTaxCode([selectedTaxCodeRow]);
+        if (selectedTaxCodeRow && selectedTaxCodeRow.TaxCode) {
+            setSelectedTaxCode(TaxCodeList?.find(tax => tax.Code == selectedTaxCodeRow.TaxCode));
         }
     }, [selectedTaxCodeRow])
 
@@ -82,7 +78,9 @@ const SalesTaxCodeList = (props) => {
             style={{ width: '75vw', minHeight: '75vh' }}
             contentStyle={{ height: '75vh' }}
             breakpoints={{ '960px': '80vw', '641px': '100vw' }}
-            footer={renderDFooter}>
+            footer={renderDFooter}
+            blockScroll
+        >
             <div>
                 <DataTable
                     header={renderTHeader}

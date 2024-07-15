@@ -5457,7 +5457,7 @@
 }
 .p-tabmenu .p-tabmenu-nav .p-tabmenuitem.p-highlight .p-menuitem-link {
   background: #2a323d;
-  border-color: #3f4b5b #3f4b5b #2a323d #3f4b5b;
+  border-color: #3f4b5b;
   color: rgba(255, 255, 255, 0.6);
 }
 

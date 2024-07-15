@@ -1,141 +1,79 @@
-import axiosClient from '../axiosClient';
+import buildQuery from "@/utils/buildQuery";
+
+const baseURL = `${process.env.NEXT_PUBLIC_SERVICE_LAYER_URL}/${process.env.NEXT_PUBLIC_ODATA_VERSION}`;
 
 const globalApi = {
-    getAllCurrency: (props) => {
-        const url = `/Currencies`;
-        // NOTE: query
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
-
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getAllCurrency: async (props, cookies) => {
+        const url = `${baseURL}/Currencies`;
+        let query = buildQuery(props);
 
         const options = {
+            method: 'GET',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
         };
 
-        return axiosClient().get(`${url + query}`, options);
+        const response = await fetch(`${url + query}`, options);
+        return response;
     },
-    getCompanyInfo: (props) => {
-        const url = `/CompanyService_GetAdminInfo`;
-        // NOTE: query
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
 
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getCompanyInfo: async (props, cookies) => {
+        const url = `${baseURL}/CompanyService_GetAdminInfo`;
+        let query = buildQuery(props);
 
         const options = {
+            method: 'POST',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
+            body: JSON.stringify({})
         };
 
-        return axiosClient().post(`${url + query}`, {}, options);
-
+        const response = await fetch(`${url + query}`, options);
+        return response;
     },
-    getVatGroups: (props) => {
-        const url = `/VatGroups`;
-        // NOTE: query
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
 
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getVatGroups: async (props, cookies) => {
+        const url = `${baseURL}/VatGroups`;
+        let query = buildQuery(props);
 
         const options = {
+            method: 'GET',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
         };
 
-        return axiosClient().get(`${url + query}`, options);
+        const response = await fetch(`${url + query}`, options);
+        return response;
+    },
+
+    getDocumentCoA: async (props, cookies) => {
+        const url = `${baseURL}/view.svc/B1_GLAccountB1SLQuery`;
+        let query = buildQuery(props);
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
+            },
+        };
+
+        const response = await fetch(`${url + query}`, options);
+        return response;
     }
 };
 

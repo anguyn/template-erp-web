@@ -7,10 +7,10 @@ const nextConfig = {
     },
     webpack: (config, { dev }) => {
         if (dev) {
-          process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
         }
         return config;
-      },
+    },
     images: {
         remotePatterns: [
             {
@@ -28,6 +28,9 @@ const nextConfig = {
         imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 512, 1024, 2048],
         formats: ['image/webp'],
     },
+    // experimental: {
+    //     appDir: true,
+    // },
 };
 
 module.exports = nextConfig;

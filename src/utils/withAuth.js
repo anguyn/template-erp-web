@@ -7,6 +7,7 @@ function withAuth(WrappedComponent) {
     const router = useRouter();
 
     const isAuthenticated = !!Cookies.get('user');
+    // const isAuthenticated = !!Cookies.get('user') && !!Cookies.get('B1SESSION');
 
     useEffect(() => {
       if (typeof window !== 'undefined') {

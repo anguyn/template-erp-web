@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import Link from 'next/link';
 import { useLayoutStore } from '@/stores/layoutStore';
 import { shallow } from 'zustand/shallow';
@@ -9,6 +9,13 @@ const NotFoundPage = () => {
         (state) => state,
         shallow
     );
+    useEffect(() => {
+                document.title = 'TSC Hub - Not Found';
+
+        return () => {
+            document.title = 'TSC Hub';
+        };
+    })
     return (
         <div className="surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden">
             <div className="flex flex-column align-items-center justify-content-center">

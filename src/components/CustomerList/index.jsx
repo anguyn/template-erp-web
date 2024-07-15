@@ -78,6 +78,7 @@ const CustomerList = (props) => {
             <div>
                 <DataTable header={renderTHeader} paginator rows={10} scrollable scrollHeight="flex" rowsPerPageOptions={[10, 25, 50, 100]} filters={filters} loading={loading} selectionMode={null} className="list-table" value={CustomerList} showGridlines tableStyle={{ minWidth: '50rem' }} selection={selectedCustomer} onSelectionChange={(e) =>  {setSelectedCustomer(e.value)}} dataKey="CardCode">
                     <Column selectionMode="single" headerStyle={{ width: '3rem' }}></Column>
+                    <Column headerStyle={{ width: '3rem' }} body={(rowData, row) => (<>{row.rowIndex + 1}</>)}></Column>
                     <Column field="CardCode" header="Customer Code"></Column>
                     <Column field="CardName" header="Customer Name"></Column>
                     <Column header="Customer Balance" body={(rowData) => (<>{formatNumberWithComma(rowData.CurrentAccountBalance) + " " + rowData.Currency}</>)}></Column>

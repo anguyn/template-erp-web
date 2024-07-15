@@ -4,13 +4,16 @@ import { useLayoutStore } from '@/stores/layoutStore';
 import { shallow } from 'zustand/shallow';
 import { MenuProvider } from './context/menucontext';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { capitalizeWords } from '@/utils/text';
 
 const AppMenu = () => {
     const { layoutConfig } = useLayoutStore((state) => state, shallow);
+    const t = useTranslations('Navigation');
 
     const model = [
         {
-            label: 'Home',
+            label: capitalizeWords(t('menu')),
             items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/' }]
         },
         {

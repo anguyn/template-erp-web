@@ -14,6 +14,7 @@ export const useLayoutStore = createSelectors(createWithEqualityFn(
                     colorScheme: 'light',
                     theme: 'bootstrap4-light-purple',
                     scale: 14,
+                    pageListStyle: "pagination"
                 },
                 setLayoutConfig: (partialState) => {
                     set((state) => {
@@ -69,6 +70,18 @@ export const useLayoutStore = createSelectors(createWithEqualityFn(
                     set((state) => {
                         state.layoutState.profileSidebarVisible = !get().layoutState.profileSidebarVisible;
                     }),
+                globalLoader: false,
+                lang: 'en',
+                setGlobalLoader: (value) => {
+                    set((state) => {
+                        state.globalLoader = value;
+                    })
+                },
+                setLang: (value) => {
+                    set((state) => {
+                        state.lang = value;
+                    })
+                }
             })
             )
             , {

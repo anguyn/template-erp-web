@@ -1,405 +1,362 @@
-import axiosClient from '../axiosClient';
+import buildQuery from "@/utils/buildQuery";
+import { Agent } from "https";
+
+const baseURL = `${process.env.NEXT_PUBLIC_SERVICE_LAYER_URL}/${process.env.NEXT_PUBLIC_ODATA_VERSION}`;
 
 const purchaseApi = {
-    getAllSalesPerson: (props) => {
-        const url = `/SalesPersons`;
-        // NOTE: query
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
-
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getAllSalesPerson: async (props, cookies) => {
+        const url = `${baseURL}/SalesPersons`;
+        const query = buildQuery(props);
 
         const options = {
+            method: 'GET',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
+            credentials: 'include' ,
         };
 
-        return axiosClient().get(`${url + query}`, options);
+        const response = await fetch(`${url}${query}`, options);
+        return response;
     },
-    getGoodsReceiptPODocQuantity: () => {
-        const url = `/PurchaseDeliveryNotes/$count`
-        return axiosClient().get(`${url}`);
-    },
-    getAllGoodReceiptPODoc: (props) => {
-        const url = `/PurchaseDeliveryNotes`;
-        // NOTE: query
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
 
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getGoodsReceiptPODocQuantity: async (cookies) => {
+        const url = `${baseURL}/PurchaseDeliveryNotes/$count`;
 
         const options = {
+            method: 'GET',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
+            credentials: 'include' ,
         };
 
-        return axiosClient().get(`${url + query}`, options);
+        const response = await fetch(url, options);
+        return response;
     },
-    getAdditionalExpenses: (props) => {
-        const url = `/AdditionalExpenses`
-        const options = {
-            headers: {
-                Prefer: 'odata.maxpagesize=0',
-            },
-        };
-        return axiosClient().get(`${url}`, options);
-    },
-    getAllTaxCode: (props) => {
-        const url = `/SalesTaxCodes`;
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
 
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getAllGoodReceiptPODoc: async (props, cookies) => {
+        const url = `${baseURL}/PurchaseDeliveryNotes`;
+        const query = buildQuery(props);
 
         const options = {
+            method: 'GET',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
+            credentials: 'include' 
         };
 
-        return axiosClient().get(`${url + query}`, options);
+        const response = await fetch(`${url}${query}`, options);
+        return response;
     },
-    getAllPaymentTerm: (props) => {
-        const url = `/PaymentTermsTypes`;
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
 
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getGoodReceiptPO: async (id, cookies) => {
+        const url = `${baseURL}/PurchaseDeliveryNotes(${id})`;
 
         const options = {
+            method: 'GET',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
+            credentials: 'include' 
         };
 
-        return axiosClient().get(`${url + query}`, options);
+        const response = await fetch(`${url}`, options);
+        return response;
     },
-    getAllSerialNumber: (props) => {
-        const url = `/view.svc/B1_ItemSerialB1SLQuery`;
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
 
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getPurchaseOrderDocQuantity: async (cookies) => {
+        const url = `${baseURL}/PurchaseOrders/$count`;
 
         const options = {
+            method: 'GET',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
+            credentials: 'include' ,
         };
 
-        return axiosClient().get(`${url + query}`, options);
+        const response = await fetch(url, options);
+        return response;
     },
-    getAllBatchNumber: (props) => {
-        const url = `/view.svc/B1_ItemBatchB1SLQuery`;
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
 
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getAllPurchaseOrderDoc: async (props, cookies) => {
+        const url = `${baseURL}/PurchaseOrders`;
+        const query = buildQuery(props);
 
         const options = {
+            method: 'GET',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
+            credentials: 'include' 
         };
 
-        return axiosClient().get(`${url + query}`, options);
+        const response = await fetch(`${url}${query}`, options);
+        return response;
     },
-    uploadAttachment: (data) => {
-        const url = `/Attachments2`;
-        const config = {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        };
 
-        return axiosClient().post(
-            url,
-            data,
-            config
-        );
-    },
-    deleteAttachment: (data) => {
-        const {AbsoluteEntry} = data;
-        if (!AbsoluteEntry) throw new Error("AbsoluteEntry is not defined")
-        const url = `/Attachments2(${AbsoluteEntry})`;
-        return axiosClient().delete(url);
-    },
-    createGoodsReceiptPO: (data) => {
-        const url = `/PurchaseDeliveryNotes`;
-        const config = {
-            headers: { "Content-Type": "application/json" },
-        };
-        return axiosClient().post(
-            url,
-            data,
-            config
-        );
-    },
-    getAllPurchaseQuotation: (props) => {
-        const url = `/PurchaseQuotations`;
-        // NOTE: query
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
-
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getPurchaseOrder: async (id, cookies) => {
+        const url = `${baseURL}/PurchaseOrders(${id})`;
 
         const options = {
+            method: 'GET',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
+            credentials: 'include' 
         };
 
-        return axiosClient().get(`${url + query}`, options);
+        const response = await fetch(`${url}`, options);
+        return response;
     },
-    getAllPurchaseOrder: (props) => {
-        const url = `/PurchaseOrders`;
-        // NOTE: query
-        let query = '?';
-        if (props) {
-            const { select, filter, orderby, top, skip } = props;
 
-            if (select) query += '$select=' + select;
-
-            if (filter) {
-                if (select) query += '&';
-                if (filter.length === 1) {
-                    query += '$filter=' + filter[0];
-                } else if (filter.length > 1) {
-                    query += '$filter=' + filter.map((f) => `(${f})`).join(' and ');
-                }
-            }
-
-            if (orderby) {
-                if (filter) query += '&';
-                if (orderby.length === 1) {
-                    query += '$orderby=' + orderby[0];
-                } else if (orderby.length > 1) {
-                    query += '$orderby=' + orderby.join(', ');
-                }
-            }
-
-            if (top) {
-                if (orderby) query += '&';
-                query += '$top=' + top;
-            }
-
-            if (skip) {
-                query += '&$skip=' + skip;
-            }
-        }
+    getGoodsReceiptDocQuantity: async (cookies) => {
+        const url = `${baseURL}/PurchaseDeliveryNotes/$count`;
 
         const options = {
+            method: 'GET',
             headers: {
-                Prefer: 'odata.maxpagesize=0',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
             },
+            credentials: 'include' ,
         };
 
-        return axiosClient().get(`${url + query}`, options);
-    }
+        const response = await fetch(url, options);
+        return response;
+    },
+
+    getAdditionalExpenses: async (props, cookies) => {
+        const url = `${baseURL}/AdditionalExpenses`;
+        const query = buildQuery(props);
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
+            },
+            credentials: 'include' 
+        };
+
+        const response = await fetch(`${url}${query}`, options);
+        return response;
+    },
+
+    getAllTaxCode: async (props, cookies) => {
+        const url = `${baseURL}/SalesTaxCodes`;
+        const query = buildQuery(props);
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
+            },
+            credentials: 'include' 
+        };
+
+        const response = await fetch(`${url}${query}`, options);
+        return response;
+    },
+
+    getAllPaymentTerm: async (props, cookies) => {
+        const url = `${baseURL}/PaymentTermsTypes`;
+        const query = buildQuery(props);
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
+            },
+            credentials: 'include' 
+        };
+
+        const response = await fetch(`${url}${query}`, options);
+        return response;
+    },
+
+    getAllSerialNumber: async (props, cookies) => {
+        const url = `${baseURL}/view.svc/B1_ItemSerialB1SLQuery`;
+        const query = buildQuery(props);
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
+            },
+            credentials: 'include' 
+        };
+
+        const response = await fetch(`${url}${query}`, options);
+        return response;
+    },
+
+    getAllBatchNumber: async (props, cookies) => {
+        const url = `${baseURL}/view.svc/B1_ItemBatchB1SLQuery`;
+        const query = buildQuery(props);
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
+            },
+            credentials: 'include' 
+        };
+
+        const response = await fetch(`${url}${query}`, options);
+        return response;
+    },
+
+    uploadAttachment: async (data, cookies) => {
+        const url = `${baseURL}/Attachments2`;
+
+        const options = {
+            method: 'POST',
+            headers: {
+                'Cookie': cookies
+            },
+            credentials: 'include', 
+            body: data
+        };
+        console.log("Body: ", data);
+
+        const response = await fetch(url, options);
+        return response;
+    },
+
+    deleteAttachment: async (data, cookies) => {
+        const { AbsoluteEntry } = data;
+        if (!AbsoluteEntry) throw new Error("AbsoluteEntry is not defined");
+
+        const url = `${baseURL}/Attachments2(${AbsoluteEntry})`;
+
+        const options = {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Cookie': cookies
+            },
+            credentials: 'include' 
+        };
+
+        const response = await fetch(url, options);
+        return response;
+    },
+
+    createGoodsReceiptPO: async (data, cookies) => {
+        const url = `${baseURL}/PurchaseDeliveryNotes`;
+        console.log("Ra gì: ", data);
+
+        const options = {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Cookie': cookies
+            },
+            credentials: 'include', 
+            body: data
+        };
+
+        const response = await fetch(url, options);
+
+        return response;
+    },
+
+    getPurchaseQuotationDocQuantity: async (cookies) => {
+        const url = `${baseURL}/PurchaseQuotations/$count`;
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
+            },
+            credentials: 'include' ,
+        };
+
+        const response = await fetch(url, options);
+        return response;
+    },
+
+    getAllPurchaseQuotation: async (props, cookies) => {
+        const url = `${baseURL}/PurchaseQuotations`;
+        const query = buildQuery(props);
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
+            },
+            credentials: 'include' 
+        };
+
+        const response = await fetch(`${url}${query}`, options);
+        return response;
+    },
+
+    getPurchaseQuotation: async (id, cookies) => {
+        const url = `${baseURL}/PurchaseQuotations(${id})`;
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Prefer': 'odata.maxpagesize=0',
+                'Cookie': cookies
+            },
+            credentials: 'include' 
+        };
+
+        const response = await fetch(`${url}`, options);
+        return response;
+    },
 }
+
 export default purchaseApi;

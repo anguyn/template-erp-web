@@ -14,6 +14,7 @@ import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
 import { Fieldset } from 'primereact/fieldset';
 import { FilterMatchMode, FilterService } from 'primereact/api';
+import { ListBox } from 'primereact/listbox';
 import { Message } from 'primereact/message';
 import { MultiSelect } from 'primereact/multiselect';
 import { PickList } from 'primereact/picklist';
@@ -23,14 +24,12 @@ import { SelectButton } from 'primereact/selectbutton';
 import { nanoid } from 'nanoid';
 import toast from 'react-hot-toast';
 
-import salesApi from '@/service/ServiceLayer/salesApi';
-
 import { formatNumberWithComma } from '@/utils/number';
 
 function BatchSerialCreation(props) {
-    const { batchSerialModalOpen, documentRow, item, warehouse, rowInfo, setBatchSerialModalOpen, setBatchCreations, setSerialCreations } = props
+    const { mode, batchSerialModalOpen, documentRow, item, warehouse, rowInfo, setBatchSerialModalOpen, setBatchCreations, setSerialCreations } = props
     // const { ManageSerialNumbers, ManageBatchNumbers, ManageByQuantity } = item;
-    // console.log("Ngứa: ", item);
+    console.log("Ngứa: ", item);
     const stringTypes = [
         { name: 'String', code: 'String' },
         { name: 'Number', code: 'Number' }
@@ -80,6 +79,8 @@ function BatchSerialCreation(props) {
     const [totalAllocatedQuantity, setTotalAllocatedQuantity] = useState(0);
     const [loading, setLoading] = useState(true);
 
+    const [batchColumnDialogOpen, setBatchColumnDialogOpen] = useState(false);
+    const [serialColumnDialogOpen, setSerialColumnDialogOpen] = useState(false);
     const [automaticCreationModalOpen, setAutomaticCreationModalOpen] = useState(false);
     const [stringCreationModalOpen, setStringCreationModalOpen] = useState(false);
     const [currentBatchCreation, setCurrentBatchCreation] = useState(null);
@@ -171,16 +172,26 @@ function BatchSerialCreation(props) {
         }
     }
 
+    const BatchSerialColumnOptionTemplate = (option) => {
+        return (
+            <>
+                <div className="flex align-items-center gap-2">
+                    <div>{option?.header}</div>
+                </div>
+            </>
+        );
+    };
+
     const onBatchColumnToggle = (e) => {
-        let selectedColumns = e.value;
-        let orderedSelectedColumns = batchContentColumns.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
+        const selectedColumns = e.value;
+        const orderedSelectedColumns = batchContentColumns.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
 
         setVisibleBatchColumns(orderedSelectedColumns);
     }
 
     const onSerialColumnToggle = (e) => {
-        let selectedColumns = e.value;
-        let orderedSelectedColumns = serialContentColumns.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
+        const selectedColumns = e.value;
+        const orderedSelectedColumns = serialContentColumns.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
 
         setVisibleSerialColumns(orderedSelectedColumns);
     }
@@ -190,7 +201,12 @@ function BatchSerialCreation(props) {
             <div>
                 {/* <Button label="Select Automatically" icon="pi pi-list-check" severity="help" outlined className="p-button-text" onClick={handleSelectAutomatically} /> */}
                 <Button label="Cancel" icon="pi pi-times" onClick={() => setBatchSerialModalOpen(false)} className="p-button-text" />
-                <Button label="Confirm" disabled={!totalAllocatedQuantity} icon="pi pi-check" onClick={handleConfirmBatchSerialCreationModal} autoFocus />
+                {
+                    mode == "create" &&
+                    (
+                        <Button label="Confirm" disabled={!totalAllocatedQuantity} icon="pi pi-check" onClick={handleConfirmBatchSerialCreationModal} autoFocus />
+                    )
+                }
             </div>
         )
     };
@@ -296,7 +312,7 @@ function BatchSerialCreation(props) {
 
             // }
         }
-        return <InputText className="w-full p-inputtext-sm" value={product?.BatchNumber} onChange={handleEditItemBatchNumber} />;
+        return <InputText disabled={mode == "view"} className="w-full p-inputtext-sm" value={product?.BatchNumber} onChange={handleEditItemBatchNumber} />;
     };
 
     const BatchQuantityTemplate = (product) => {
@@ -307,7 +323,7 @@ function BatchSerialCreation(props) {
                 } else return content
             })));
         }
-        return <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" min={0} showButtons value={product?.Quantity} onValueChange={handleEditItemBatchQuantity} />
+        return <InputNumber disabled={mode == "view"} inputId="integeronly" className="w-full text-right p-inputtext-sm" min={0} showButtons value={product?.Quantity} onValueChange={handleEditItemBatchQuantity} />
     };
 
     const BatchAttribute1Template = (product) => {
@@ -326,7 +342,7 @@ function BatchSerialCreation(props) {
 
             // }
         }
-        return <InputText className="w-full p-inputtext-sm" value={product?.BatchAttribute1} onChange={handleEditItemBatchAttribute1} />;
+        return <InputText disabled={mode == "view"} className="w-full p-inputtext-sm" value={product?.BatchAttribute1} onChange={handleEditItemBatchAttribute1} />;
     };
 
     const BatchAttribute2Template = (product) => {
@@ -345,7 +361,7 @@ function BatchSerialCreation(props) {
 
             // }
         }
-        return <InputText className="w-full p-inputtext-sm" value={product?.BatchAttribute2} onChange={handleEditItemBatchAttribute2} />;
+        return <InputText disabled={mode == "view"} className="w-full p-inputtext-sm" value={product?.BatchAttribute2} onChange={handleEditItemBatchAttribute2} />;
     };
 
     const BatchAdmissionDateTemplate = (product) => {
@@ -365,7 +381,7 @@ function BatchSerialCreation(props) {
             // }
         }
 
-        return <Calendar id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base " value={product?.AdmissionDate} onChange={handleEditItemBatchAdmissionDate} showIcon />
+        return <Calendar disabled={mode == "view"} id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base " value={product?.AdmissionDate} onChange={handleEditItemBatchAdmissionDate} showIcon />
     };
 
     const BatchManufacturingDateTemplate = (product) => {
@@ -385,7 +401,7 @@ function BatchSerialCreation(props) {
             // }
         }
 
-        return <Calendar id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base" value={product?.ManufacturingDate} onChange={handleEditItemBatchManufacturingDate} showIcon />
+        return <Calendar disabled={mode == "view"} id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base" value={product?.ManufacturingDate} onChange={handleEditItemBatchManufacturingDate} showIcon />
     };
 
     const BatchExpirationDateTemplate = (product) => {
@@ -405,7 +421,7 @@ function BatchSerialCreation(props) {
             // }
         }
 
-        return <Calendar id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base" value={product?.ExpirationDate} onChange={handleEditItemBatchExpirationDate} showIcon />
+        return <Calendar disabled={mode == "view"} id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base" value={product?.ExpirationDate} onChange={handleEditItemBatchExpirationDate} showIcon />
     };
 
     const BatchLocationTemplate = (product) => {
@@ -424,7 +440,7 @@ function BatchSerialCreation(props) {
 
             // }
         }
-        return <InputText className="w-full p-inputtext-sm" value={product?.Location} onChange={handleEditItemBatchLocation} />;
+        return <InputText disabled={mode == "view"} className="w-full p-inputtext-sm" value={product?.Location} onChange={handleEditItemBatchLocation} />;
     };
 
     const BatchDetailsTemplate = (product) => {
@@ -443,7 +459,7 @@ function BatchSerialCreation(props) {
 
             // }
         }
-        return <InputText className="w-full p-inputtext-sm" value={product?.Details} onChange={handleEditItemBatchDetails} />;
+        return <InputText disabled={mode == "view"} className="w-full p-inputtext-sm" value={product?.Details} onChange={handleEditItemBatchDetails} />;
     };
 
     const handleDeleteBatchSerial = () => {
@@ -605,7 +621,7 @@ function BatchSerialCreation(props) {
 
             // }
         }
-        return <InputText className="w-full p-inputtext-sm" value={product?.IntrSerial} onChange={handleEditItemSerialNumber} />;
+        return <InputText disabled={mode == "view"} className="w-full p-inputtext-sm" value={product?.IntrSerial} onChange={handleEditItemSerialNumber} />;
     };
 
     const SerialLotNumberTemplate = (product) => {
@@ -616,7 +632,7 @@ function BatchSerialCreation(props) {
                 } else return content
             })));
         }
-        return <InputText className="w-full p-inputtext-sm" value={product?.LotNumber} onValueChange={handleEditItemSerialLotNumber} />
+        return <InputText disabled={mode == "view"} className="w-full p-inputtext-sm" value={product?.LotNumber} onValueChange={handleEditItemSerialLotNumber} />
     };
 
     const SerialMfrSerialNumberTemplate = (product) => {
@@ -627,7 +643,7 @@ function BatchSerialCreation(props) {
                 } else return content
             })));
         }
-        return <InputText className="w-full p-inputtext-sm" value={product?.MfrSerialNo} onValueChange={handleEditItemSerialMfrSerialNumber} />
+        return <InputText disabled={mode == "view"} className="w-full p-inputtext-sm" value={product?.MfrSerialNo} onValueChange={handleEditItemSerialMfrSerialNumber} />
     };
 
     const SerialAdmissionDateTemplate = (product) => {
@@ -647,7 +663,7 @@ function BatchSerialCreation(props) {
             // }
         }
 
-        return <Calendar id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base" value={product?.AdmissionDate} onChange={handleEditItemSerialAdmissionDate} showIcon />
+        return <Calendar disabled={mode == "view"} id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base" value={product?.AdmissionDate} onChange={handleEditItemSerialAdmissionDate} showIcon />
     };
 
     const SerialManufacturingDateTemplate = (product) => {
@@ -667,7 +683,7 @@ function BatchSerialCreation(props) {
             // }
         }
 
-        return <Calendar id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base" value={product?.ManufacturingDate} onChange={handleEditItemSerialManufacturingDate} showIcon />
+        return <Calendar disabled={mode == "view"} id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base" value={product?.ManufacturingDate} onChange={handleEditItemSerialManufacturingDate} showIcon />
     };
 
     const SerialExpirationDateTemplate = (product) => {
@@ -687,7 +703,7 @@ function BatchSerialCreation(props) {
             // }
         }
 
-        return <Calendar id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base" value={product?.ExpirationDate} onChange={handleEditItemSerialExpirationDate} showIcon />
+        return <Calendar disabled={mode == "view"} id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base" value={product?.ExpirationDate} onChange={handleEditItemSerialExpirationDate} showIcon />
     };
 
     const SerialMfrWarrantyStartTemplate = (product) => {
@@ -707,7 +723,7 @@ function BatchSerialCreation(props) {
             // }
         }
 
-        return <Calendar id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base " value={product?.MfrWarrantyStart} onChange={handleEditItemSerialMfrWarrantyStart} showIcon />
+        return <Calendar disabled={mode == "view"} id="admission-date-batch-el" dateFormat="dd/mm/yy" className="text-base " value={product?.MfrWarrantyStart} onChange={handleEditItemSerialMfrWarrantyStart} showIcon />
     };
 
     const SerialMfrWarrantyEndTemplate = (product) => {
@@ -727,7 +743,7 @@ function BatchSerialCreation(props) {
             // }
         }
 
-        return <Calendar id="admission-date-batch-el w-full" dateFormat="dd/mm/yy" className="text-base " value={product?.MfrWarrantyEnd} onChange={handleEditItemSerialMfrWarrantyEnd} showIcon />
+        return <Calendar disabled={mode == "view"} id="admission-date-batch-el w-full" dateFormat="dd/mm/yy" className="text-base " value={product?.MfrWarrantyEnd} onChange={handleEditItemSerialMfrWarrantyEnd} showIcon />
     };
 
     const SerialLocationTemplate = (product) => {
@@ -746,7 +762,7 @@ function BatchSerialCreation(props) {
 
             // }
         }
-        return <InputText className="w-full p-inputtext-sm" value={product?.Location} onChange={handleEditItemSerialLocation} />;
+        return <InputText disabled={mode == "view"} className="w-full p-inputtext-sm" value={product?.Location} onChange={handleEditItemSerialLocation} />;
     };
 
     const SerialDetailsTemplate = (product) => {
@@ -765,7 +781,7 @@ function BatchSerialCreation(props) {
 
             // }
         }
-        return <InputText className="w-full p-inputtext-sm" value={product?.Details} onChange={handleEditItemSerialDetails} />;
+        return <InputText disabled={mode == "view"} className="w-full p-inputtext-sm" value={product?.Details} onChange={handleEditItemSerialDetails} />;
     };
 
     const handleOpenAutomaticCreationModal = () => {
@@ -1098,6 +1114,13 @@ function BatchSerialCreation(props) {
     const batchContentColumns = useMemo(
         () => [
             {
+                header: 'No.',
+                field: 'No.',
+                className: 'text-center',
+                minWidth: '4rem',
+                body: (item, row) => (<>{row.rowIndex + 1}</>)
+            },
+            {
                 header: 'Batch Number',
                 field: 'BatchNumber',
                 className: 'text-center',
@@ -1160,13 +1183,18 @@ function BatchSerialCreation(props) {
                 minWidth: '12rem',
                 body: BatchDetailsTemplate
             },
-        ],
-        // []
-        [item?.BatchNumbers, batchList]
+        ], [item?.BatchNumbers, batchList]
     );
 
     const serialContentColumns = useMemo(
         () => [
+            {
+                header: 'No.',
+                field: 'No.',
+                className: 'text-center',
+                minWidth: '4rem',
+                body: (item, row) => (<>{row.rowIndex + 1}</>)
+            },
             {
                 header: 'Mfr Serial Number',
                 field: 'MfrSerialNo',
@@ -1237,9 +1265,7 @@ function BatchSerialCreation(props) {
                 minWidth: '12rem',
                 body: SerialDetailsTemplate
             },
-        ],
-        []
-        [item?.SerialNumbers, serialList]
+        ], [item?.SerialNumbers, serialList]
     );
 
     const stringContentColumns = useMemo(
@@ -1275,25 +1301,24 @@ function BatchSerialCreation(props) {
         [item?.SerialNumbers, serialList, automaticStringCriterias]
     );
 
-    const [visibleBatchColumns, setVisibleBatchColumns] = useState(batchContentColumns);
-    const [visibleSerialColumns, setVisibleSerialColumns] = useState(serialContentColumns);
+    const [visibleBatchColumns, setVisibleBatchColumns] = useState(null);
+    const [visibleSerialColumns, setVisibleSerialColumns] = useState(null);
 
     const renderBatchCreationTHeader = () => {
         return (
-            <div className="flex flex-col sm:flex-row gap-3 justify-content-between py-2">
-                <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-end py-2">
+                {/* <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
                     <MultiSelect value={visibleBatchColumns} options={batchContentColumns} optionLabel="header" onChange={onBatchColumnToggle} className="p-inputtext-sm w-full sm:w-20rem text-sm" display="chip" />
-
-                </div>
-                <div className="flex gap-2 mb-4 justify-end items-center">
+                </div> */}
+                <div className="flex gap-2 mb-4 justify-center items-center">
                     {
-                        totalAllocatedQuantity < item?.Quantity && (
+                        totalAllocatedQuantity < item?.Quantity && mode == "create" && (
                             <a className='hover:cursor-pointer' onClick={handleOpenAutomaticCreationModal}>Automatic Creation</a>
                         )
                     }
                     <Button
                         type="button"
-                        disabled={!selectedBatchNumbers || selectedBatchNumbers?.length < 1}
+                        disabled={!selectedBatchNumbers || selectedBatchNumbers?.length < 1 || mode == "view"}
                         icon="pi pi-trash"
                         severity="danger"
                         rounded
@@ -1303,7 +1328,16 @@ function BatchSerialCreation(props) {
                         tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
                         onClick={handleDeleteBatchSerial}
                     />
-                    <Button type="button" icon="pi pi-cog" rounded outlined data-pr-tooltip="Setting" tooltip="Setting" tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }} />
+                    <Button
+                        type="button"
+                        icon="pi pi-cog"
+                        rounded
+                        outlined
+                        data-pr-tooltip="Setting"
+                        tooltip="Setting"
+                        tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
+                        onClick={() => setBatchColumnDialogOpen(true)}
+                    />
                 </div>
                 {/* <div className="flex gap-2 mb-4 justify-between items-center">
                     <div className='flex gap-4 items-center'>
@@ -1345,19 +1379,19 @@ function BatchSerialCreation(props) {
 
     const renderSerialCreationTHeader = () => {
         return (
-            <div className="flex flex-col sm:flex-row gap-3 justify-content-between py-2">
-                <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-end py-2">
+                {/* <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
                     <MultiSelect value={visibleSerialColumns} options={serialContentColumns} optionLabel="header" onChange={onSerialColumnToggle} className="p-inputtext-sm w-full sm:w-20rem text-sm" display="chip" />
-                </div>
+                </div> */}
                 <div className="flex gap-2 mb-4 justify-end items-center">
                     {
-                        totalAllocatedQuantity < item?.Quantity && (
+                        totalAllocatedQuantity < item?.Quantity && mode == "create" && (
                             <a className='hover:cursor-pointer' onClick={handleOpenAutomaticCreationModal}>Automatic Creation</a>
                         )
                     }
                     <Button
                         type="button"
-                        disabled={!selectedSerialNumbers || selectedSerialNumbers?.length < 1}
+                        disabled={!selectedSerialNumbers || selectedSerialNumbers?.length < 1 || mode == "view"}
                         icon="pi pi-trash"
                         severity="danger"
                         rounded
@@ -1367,7 +1401,16 @@ function BatchSerialCreation(props) {
                         tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
                         onClick={handleDeleteBatchSerial}
                     />
-                    <Button type="button" icon="pi pi-cog" rounded outlined data-pr-tooltip="Setting" tooltip="Setting" tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }} />
+                    <Button
+                        type="button"
+                        icon="pi pi-cog"
+                        rounded
+                        outlined
+                        data-pr-tooltip="Setting"
+                        tooltip="Setting"
+                        tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
+                        onClick={() => setSerialColumnDialogOpen(true)}
+                    />
                 </div>
             </div>
         );
@@ -1720,7 +1763,8 @@ function BatchSerialCreation(props) {
 
     useEffect(() => {
         setVisibleBatchColumns(batchContentColumns);
-    }, [batchContentColumns]);
+        setVisibleSerialColumns(serialContentColumns);
+    }, [batchContentColumns, serialContentColumns]);
 
     useEffect(() => {
         if (item?.ManageBatchNumbers) {
@@ -1745,26 +1789,81 @@ function BatchSerialCreation(props) {
             (async () => {
                 try {
                     if (item?.ManageBatchNumbers) {
-                        const currentList = [
-                            ...item?.BatchNumbers,
-                            {
-                                id__: nanoid(6),
-                                BatchNumber: null,
-                                Quantity: 0,
-                            }
-                        ];
+                        let currentList = [];
+
+                        if (mode == "create") {
+                            currentList = [
+                                ...item?.BatchNumbers,
+                                {
+                                    id__: nanoid(6),
+                                    BatchNumber: null,
+                                    Quantity: null,
+                                    BatchAttribute1: null,
+                                    BatchAttribute2: null,
+                                    AdmissionDate: null,
+                                    ManufacturingDate: null,
+                                    ExpirationDate: null,
+                                    Location: null,
+                                    Details: null,
+                                }
+                            ];
+                        } else {
+                            currentList = [
+                                ...item?.BatchNumbers.map(batch => ({
+                                    id__: nanoid(6),
+                                    BatchNumber: batch.BatchNumber,
+                                    Quantity: batch.Quantity,
+                                    BatchAttribute1: batch.ManufacturerSerialNumber,
+                                    BatchAttribute2: batch.InternalSerialNumber,
+                                    AdmissionDate: new Date(batch.AddmisionDate),
+                                    ManufacturingDate: new Date(batch.ManufacturingDate),
+                                    ExpirationDate: new Date(batch.ExpiryDate),
+                                    Location: batch.Location,
+                                    Details: batch.Notes,
+                                }))
+                            ];
+                        }
                         setBatchList(currentList);
                         setOriginalBatchList([...item?.BatchNumbers]);
                         console.log("Res batch: ", currentList)
                     } else {
-                        const currentList = [
-                            ...item?.SerialNumbers,
-                            {
-                                id__: nanoid(6),
-                                IntrSerial: null,
-                                Quantity: 0
-                            }
-                        ];
+                        let currentList = [];
+                        if (mode == "create") {
+                            currentList = [
+                                ...item?.SerialNumbers,
+                                {
+                                    id__: nanoid(6),
+                                    MfrSerialNo: null,
+                                    IntrSerial: null,
+                                    LotNumber: null,
+                                    AdmissionDate: null,
+                                    ManufacturingDate: null,
+                                    ExpirationDate: null,
+                                    MfrWarrantyStart: null,
+                                    MfrWarrantyEnd: null,
+                                    Location: null,
+                                    Details: null
+                                }
+                            ];
+                        } else {
+                            currentList = [
+                                ...item?.SerialNumbers.map(serial => ({
+                                    id__: nanoid(6),
+                                    MfrSerialNo: serial.ManufacturerSerialNumber,
+                                    IntrSerial: serial.InternalSerialNumber,
+                                    LotNumber: serial.BatchID,
+                                    AdmissionDate: new Date(serial.ReceptionDate),
+                                    ManufacturingDate: new Date(serial.ManufactureDate),
+                                    ExpirationDate: new Date(serial.ExpiryDate),
+                                    MfrWarrantyStart: new Date(serial.WarrantyStart),
+                                    MfrWarrantyEnd: new Date(serial.WarrantyEnd),
+                                    Location: serial.Location,
+                                    Details: serial.Notes,
+                                    Quantity: serial.Quantity
+                                }))
+                            ];
+                        }
+
                         setSerialList(currentList)
                         setOriginalSerialList([...item?.SerialNumbers]);
                         console.log("Res serial: ", currentList);
@@ -1796,7 +1895,7 @@ function BatchSerialCreation(props) {
     return (
         <>
             <Dialog
-                header="Create Batch/Serial Number"
+                header={`${mode == "create" ? "Create" : "View"} Batch/Serial Number`}
                 visible={batchSerialModalOpen}
                 onHide={handleHideBatchSerialCreationModal}
                 maximizable
@@ -1829,14 +1928,14 @@ function BatchSerialCreation(props) {
                                         </div>
                                         <div className='flex flex-row'>
                                             <label className='basis-1/2 text-lg'>Warehouse Code</label>
-                                            <span className='text-lg'>{item?.Warehouse?.code || '-'}</span>
+                                            <span className='text-lg'>{(mode == "create" ? item?.Warehouse?.code : item.Warehouse) || '-'}</span>
                                         </div>
                                     </div>
 
                                     <div className='basis-1/2 flex flex-col gap-4'>
                                         <div className='flex flex-row'>
                                             <label className='basis-1/2 text-lg'>Warehouse Name</label>
-                                            <span className='text-lg'>{item?.Warehouse?.name || '-'}</span>
+                                            <span className='text-lg'>{(mode == "create" ? item?.Warehouse?.name : item.Warehouse) || '-'}</span>
                                         </div>
                                         <div className='flex flex-row'>
                                             <label className='basis-1/2 text-lg'>Quantity</label>
@@ -1846,10 +1945,10 @@ function BatchSerialCreation(props) {
                                             <label className={`basis-1/2 text-lg ${(totalAllocatedQuantity > item?.Quantity || totalAllocatedQuantity <= 0) && 'font-semibold text-red-600'}`}>Allocated Total</label>
                                             <span className={`text-lg ${(totalAllocatedQuantity > item?.Quantity || totalAllocatedQuantity <= 0) && 'font-semibold text-red-600'}`}>{formatNumberWithComma(totalAllocatedQuantity)}</span>
                                         </div>
-                                        <div className='flex flex-row'>
+                                        {/* <div className='flex flex-row'>
                                             <label className='basis-1/2 text-lg'>Display Quantites By</label>
                                             <span className='text-lg'>1</span>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </div>
                             </Fieldset>
@@ -1953,14 +2052,14 @@ function BatchSerialCreation(props) {
                                         </div>
                                         <div className='flex flex-row'>
                                             <label className='basis-1/2 text-lg'>Warehouse Code</label>
-                                            <span className='text-lg'>{item?.Warehouse?.code || '-'}</span>
+                                            <span className='text-lg'>{(mode == "create" ? item?.Warehouse?.code : item.Warehouse) || '-'}</span>
                                         </div>
                                     </div>
 
                                     <div className='sm:basis-1/2 flex flex-col gap-4'>
                                         <div className='flex flex-row'>
                                             <label className='basis-1/2 text-lg'>Warehouse Name</label>
-                                            <span className='text-lg'>{item?.Warehouse?.name || '-'}</span>
+                                            <span className='text-lg'>{(mode == "create" ? item?.Warehouse?.name : item.Warehouse) || '-'}</span>
                                         </div>
                                         <div className='flex flex-row'>
                                             <label className='basis-1/2 text-lg'>Quantity</label>
@@ -1970,10 +2069,10 @@ function BatchSerialCreation(props) {
                                             <label className={`basis-1/2 text-lg ${(totalAllocatedQuantity > item?.Quantity || totalAllocatedQuantity <= 0) && 'font-semibold text-red-600'}`}>Allocated Total</label>
                                             <span className={`text-lg ${(totalAllocatedQuantity > item?.Quantity || totalAllocatedQuantity <= 0) && 'font-semibold text-red-600'}`}>{formatNumberWithComma(totalAllocatedQuantity)}</span>
                                         </div>
-                                        <div className='flex flex-row'>
+                                        {/* <div className='flex flex-row'>
                                             <label className='basis-1/2 text-lg'>Display Quantites By</label>
                                             <span className='text-lg'>1</span>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </div>
                             </Fieldset>
@@ -2027,6 +2126,30 @@ function BatchSerialCreation(props) {
                         </div>
                     )
                 }
+            </Dialog>
+            <Dialog
+                header={`Tuỳ chọn cột tạo ${item?.ManageSerialNumbers ? "serial" : "batch"}`}
+                blockScroll
+                visible={batchColumnDialogOpen}
+                onHide={() => setBatchColumnDialogOpen(false)}
+                style={{ width: '50vw' }}
+                breakpoints={{ '960px': '75vw', '641px': '100vw' }}
+            >
+                <div clasName="m-0 p-2 pt-1">
+                    <ListBox filter listStyle={{ height: '400px' }} multiple value={visibleBatchColumns} itemTemplate={BatchSerialColumnOptionTemplate} onChange={onBatchColumnToggle} options={batchContentColumns} optionLabel="header" className="w-full mt-3" />
+                </div>
+            </Dialog>
+            <Dialog
+                header="Tuỳ chọn cột tạo serial number"
+                blockScroll
+                visible={serialColumnDialogOpen}
+                onHide={() => setSerialColumnDialogOpen(false)}
+                style={{ width: '50vw' }}
+                breakpoints={{ '960px': '75vw', '641px': '100vw' }}
+            >
+                <div clasName="m-0 p-2 pt-1">
+                    <ListBox filter listStyle={{ height: '400px' }} multiple value={visibleSerialColumns} itemTemplate={BatchSerialColumnOptionTemplate} onChange={onSerialColumnToggle} options={serialContentColumns} optionLabel="header" className="w-full mt-3" />
+                </div>
             </Dialog>
             <Dialog
                 header={`Automatic ${item?.ManageBatchNumbers ? "Batch" : "Serial Number"} Creation`}
