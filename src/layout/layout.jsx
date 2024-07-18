@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import Head from 'next/head';
 import { ScrollTop } from 'primereact/scrolltop';
 import { useRouter } from 'next/router';
@@ -17,6 +17,8 @@ const Layout = (props) => {
     const { layoutState, layoutConfig, setLayoutState, globalLoader } = useLayoutStore((state) => state, shallow);
     const topbarRef = useRef(null);
     const sidebarRef = useRef(null);
+
+    const [currentDocumentTitle, setCurrentDocumentTitle] = useState(null);
 
     const router = useRouter();
     const [bindMenuOutsideClickListener, unbindMenuOutsideClickListener] = useEventListener({
@@ -94,6 +96,7 @@ const Layout = (props) => {
     }, [layoutState.profileSidebarVisible]);
 
     useEffect(() => {
+        setCurrentDocumentTitle(document?.title ? document?.title : "SAP B1 Web Client");
         router.events.on('routeChangeComplete', () => {
             hideMenu();
             hideProfileMenu();
@@ -119,7 +122,7 @@ const Layout = (props) => {
     return (
         <React.Fragment>
             <Head>
-                <title>SAP B1 Web Client</title>
+                {/* <title>{currentDocumentTitle}</title> */}
                 <meta charSet="UTF-8" />
                 <meta
                     name="description"

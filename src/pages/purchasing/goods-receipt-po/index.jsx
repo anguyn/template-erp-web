@@ -9,7 +9,7 @@ const GoodsReceiptPOs = ({ initialData, messages }) => {
     )
 }
 
-GoodsReceiptPOs.messages = ['General', 'GoodsReceiptPOList', 'PageLayout', 'General', 'Languages', 'Navigation', 'Dialog'];
+GoodsReceiptPOs.messages = ['General', 'GoodsReceiptPOList', 'PageLayout', 'General', 'Languages', 'Navigation', 'Dialog', 'Messages'];
 
 export const getServerSideProps = async (context) => {
     const { locale } = context;

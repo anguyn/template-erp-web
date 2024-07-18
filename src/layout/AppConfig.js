@@ -84,7 +84,7 @@ const AppConfig = (props) => {
         }, undefined, { locale: lang });
     }, [router, route]);
 
-    const handleChanggPageListStyle = (value) => {
+    const handleChangePageListStyle = (value) => {
         setLayoutConfig({ pageListStyle: value });
     }
 
@@ -316,7 +316,7 @@ const AppConfig = (props) => {
                     {pageListStyles.map((el) => {
                         return (
                             <div key={el.code} className="flex align-items-center">
-                                <RadioButton inputId={el.code} name="el" value={el.code} checked={layoutConfig?.pageListStyle == el.code} onChange={(e) => handleChanggPageListStyle(e.value)} />
+                                <RadioButton inputId={el.code} name="el" value={el.code} checked={layoutConfig?.pageListStyle == el.code} onChange={(e) => {console.log("Do6:0"); handleChangePageListStyle(e.value)}} />
                                 <label htmlFor={el.code} className="ml-2 hover:cursor-pointer">{el.name}</label>
                             </div>
                         );

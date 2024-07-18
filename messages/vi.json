@@ -21,6 +21,10 @@
         "signInFailed": "Thông tin sai.",
         "pleaseTryAgainLater": "Vui lòng thử lại sau"
     },
+    "Home": {
+        "homePage": "Trang chủ",
+        "sapWebClient": "SAP Web Client"
+    },
     "Messages": {
         "unsave": "Dữ liệu chưa lưu sẽ bị mất. Bạn có đồng ý tiếp tục mà không lưu?",
         "save": "Bạn không thể thay đổi dữ liệu khi đã lưu. Vẫn tiếp tục?",
@@ -94,6 +98,12 @@
         "goodsReceiptPO": "Phiếu nhập hàng mua",
         "goodsIssue": "Phiếu xuất kho",
         "goodsReceipt": "Phiếu nhập kho",
+        "goodsReturnRequest": "Yêu cầu trả hàng hóa",
+        "goodsReturn": "Trả hàng hóa",
+        "returnRequest": "Yêu cầu hoàn trả",
+        "return": "Hoàn trả",
+        "apInvoice": "Hóa đơn mua hàng",
+        "arInvoice": "A/R invoice",
         "searchKeyWord": "Tìm theo từ khoá",
         "enterKeyWord": "Nhập từ khoá",
         "customerCode": "Mã khách hàng",
@@ -126,6 +136,7 @@
         "accounting": "Kế Toán",
         "attachment": "Đính Kèm",
         "create": "Tạo",
+        "createNew": "Tạo mới",
         "export": "Xuất",
         "filter": "Lọc",
         "filterOption": "Tuỳ chọn lọc",
@@ -141,6 +152,7 @@
         "add&new": "Tạo mới & Thêm mới",
         "add&back": "Tạo mới & Trở lại",
         "copyFrom": "Sao chép từ",
+        "copyTo": "Sao chép đến",
         "update": "Cập nhật"
     },
     "Languages": {

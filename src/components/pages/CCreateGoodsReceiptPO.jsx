@@ -867,7 +867,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
         }
 
         const currentOptions = ManageBatchNumbers ? contentData[row.rowIndex]?.BatchNumbers?.map(batch => ({ name: `${batch.BatchNumber} (${formatNumberWithComma(batch.Quantity)})`, code: batch.BatchNumber })) : contentData[row.rowIndex]?.SerialNumbers?.map(serial => ({ name: serial.IntrSerial, code: serial.IntrSerial }))
-        
+
         return (
             <div className="p-inputtext p-inputtext-sm p-component w-full p-0 flex justify-between items-center border-r-0">
                 <MultiSelect
@@ -1584,7 +1584,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
         const currentContactPersonName = selectedValue?.ContactPerson;
 
         // Check default currency xem có giống với local currency khum
-        const defaultCurrency = selectedValue.DefaultCurrency;
+        const defaultCurrency = selectedValue?.DefaultCurrency;
 
         if (defaultCurrency && defaultCurrency != companyInfo.LocalCurrency) {
             console.log("Lạ nhen: ", defaultCurrency);
@@ -1627,7 +1627,11 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
             const currentContactPerson = currentContactPersonList.find(val => val.Name == currentContactPersonName);
             console.log("Selected contact person: ", currentContactPerson)
             setContactPersonList(currentContactPersonList);
-            setContactPersonListOptions(currentContactPersonList.map(item => ({ name: item.Name, code: item.InternalCode })))
+            setContactPersonListOptions(currentContactPersonList.map(item => {
+                const names = [item.FirstName, item.MiddleName, item.LastName];
+                const fullName = names.filter(name => name !== null && name !== undefined && name !== '').join(' ');
+                return { name: item.Name + ' - ' + fullName, code: item.InternalCode }
+            }))
             setSelectedContactPerson({ name: currentContactPerson.Name, code: currentContactPerson.InternalCode });
         }
 
@@ -2244,6 +2248,26 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
 
     }
 
+    const onChangeSelectAllColumn = () => {
+        if (whichColumnTableModalOpen) {
+            switch (whichColumnTableModalOpen) {
+                case "item":
+                    setVisibleItemColumns(contentColumns);
+    
+                    break;
+                case "service":
+                    setVisibleServiceColumns(serviceColumns);
+                    break;
+                case "freight":
+                    setVisibleFreightColumns(freightChargesColumns);
+                    break;
+    
+                default:
+                    break;
+            }
+        }
+    }
+
     const onTableColumnToggle = (e) => {
         const selectedColumns = e.value;
         let orderedSelectedColumns;
@@ -2788,7 +2812,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('contactPerson')}</label>
-                                                    <Dropdown filter checkmark options={contactPersonListOptions} value={selectedContactPerson} optionLabel="name"
+                                                    <Dropdown filter showClear checkmark options={contactPersonListOptions} value={selectedContactPerson} optionLabel="name"
                                                         placeholder="Select contact person" onChange={(e) => setSelectedContactPerson(e.value)} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
@@ -2914,7 +2938,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                                 <Column rowReorder style={{ width: '3rem' }} />
                                                                 <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
                                                                 {
-                                                                    selectedDocType?.code == 'dDocument_Items' && contentColumns && contentColumns.length > 0 && contentColumns.map((col, index) => (
+                                                                    selectedDocType?.code == 'dDocument_Items' && visibleItemColumns && visibleItemColumns.length > 0 && visibleItemColumns.map((col, index) => (
                                                                         <Column
                                                                             key={index}
                                                                             header={col.header}
@@ -2926,7 +2950,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                                     ))
                                                                 }
                                                                 {
-                                                                    selectedDocType?.code == 'dDocument_Service' && serviceColumns && serviceColumns.length > 0 && serviceColumns.map((col, index) => (
+                                                                    selectedDocType?.code == 'dDocument_Service' && visibleServiceColumns && visibleServiceColumns.length > 0 && visibleServiceColumns.map((col, index) => (
                                                                         <Column
                                                                             key={index}
                                                                             header={col.header}
@@ -3001,7 +3025,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                                 <Column rowReorder style={{ width: '3rem' }} />
                                                                 <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
                                                                 {
-                                                                    freightChargesColumns && freightChargesColumns.length > 0 && freightChargesColumns.map((col, index) => (
+                                                                    visibleFreightColumns && visibleFreightColumns.length > 0 && visibleFreightColumns.map((col, index) => (
                                                                         <Column
                                                                             key={index}
                                                                             // ref={index === 1 ? columnRef : null}
@@ -3199,7 +3223,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>Cash Discount Date Offset</label>
-                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.CashDiscountDateOffset} onChange={(e) => setGeneralInfo(prev => ({ ...prev, CashDiscountDateOffset: e.target.value }))} />
+                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.CashDiscountDateOffset} onChange={(e) => setGeneralInfo(prev => ({ ...prev, CashDiscountDateOffset: e.value }))} />
                                                 </div>
                                                 {/* <div className="flex flex-column gap-2">
                                             <label className='font-semibold'>BP Project</label>
@@ -3216,7 +3240,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>Order Number</label>
-                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.ImportFileNum} onChange={(e) => setGeneralInfo(prev => ({ ...prev, ImportFileNum: e.target.value }))} />
+                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.ImportFileNum} onChange={(e) => setGeneralInfo(prev => ({ ...prev, ImportFileNum: e.value }))} />
                                                 </div>
                                                 {/* <div className="flex flex-column gap-2">
                                             <label className='font-semibold'>Use Shipped Goods Account</label>
@@ -3339,6 +3363,10 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                 breakpoints={{ '960px': '75vw', '641px': '100vw' }}
                             >
                                 <div clasName="m-0 p-2 pt-1">
+                                    <div className="flex gap-2 justify-between">
+                                        <span className="text-lg">{whichColumnTableModalOpen == "item" ? visibleItemColumns?.length : whichColumnTableModalOpen == "service" ? visibleServiceColumns?.length : visibleFreightColumns?.length} column(s) selected</span>
+                                        <Button label="Select All" onClick={onChangeSelectAllColumn} text disabled={whichColumnTableModalOpen == "item" ? (contentColumns?.length == visibleItemColumns?.length) : whichColumnTableModalOpen == "service" ? (serviceColumns?.length == visibleServiceColumns?.length) : freightChargesColumns?.length == visibleFreightColumns} />
+                                    </div>
                                     <ListBox
                                         filter
                                         listStyle={{ height: '400px' }}

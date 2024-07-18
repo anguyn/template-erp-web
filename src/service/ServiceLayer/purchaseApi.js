@@ -303,6 +303,79 @@ const purchaseApi = {
         return response;
     },
 
+    updateGoodsReceiptPO: async (id, data, cookies) => {
+        const url = `${baseURL}/PurchaseDeliveryNotes(${id})`;
+
+        const options = {
+            method: 'PATCH',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Cookie': cookies
+            },
+            credentials: 'include', 
+            body: data
+        };
+
+        const response = await fetch(url, options);
+
+        return response;
+    },
+
+    cancelGoodReceiptPO: async (id, cookies) => {
+        const url = `${baseURL}/PurchaseDeliveryNotes(${id})/Cancel`;
+
+        const options = {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Cookie': cookies
+            },
+            credentials: 'include'
+        };
+
+        const response = await fetch(url, options);
+
+        return response;
+    },
+
+    closeGoodReceiptPO: async (id, cookies) => {
+        const url = `${baseURL}/PurchaseDeliveryNotes(${id})/Close`;
+
+        const options = {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Cookie': cookies
+            },
+            credentials: 'include'
+        };
+
+        const response = await fetch(url, options);
+
+        return response;
+    },
+
+    reopenGoodReceiptPO: async (id, cookies) => {
+        const url = `${baseURL}/PurchaseDeliveryNotes(${id})/Reopen`;
+
+        const options = {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Cookie': cookies
+            },
+            credentials: 'include'
+        };
+
+        const response = await fetch(url, options);
+
+        return response;
+    },
+
     getPurchaseQuotationDocQuantity: async (cookies) => {
         const url = `${baseURL}/PurchaseQuotations/$count`;
 

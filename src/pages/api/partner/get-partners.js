@@ -2,28 +2,21 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import partnersApi from '@/service/ServiceLayer/partnersApi';
 
 export default async function handler(req, res) {
-    const { method, query, body } = req;
+    const { method, body } = req;
 
     if (method === 'POST') {
         try {
-            const cookies = req.headers.cookie || '';
-
-            const { id } = query;
-
             const { select, filter, orderby, top, skip } = body;
 
             const queryParams = { select, filter, orderby, top, skip };
 
+            const cookies = req.headers.cookie || '';
 
-            if (!id) {
-                return res.status(400).json({ message: 'ID is required' });
+            const response = await partnersApi.getAllPartners(queryParams, cookies);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-
-            const response = await partnersApi.getPartnerByCardCode(id, queryParams, cookies);
-
-            // if (!response.ok) {
-            //     throw new Error(`HTTP error! status: ${response.status}`);
-            // }
 
             const data = await response.json();
 

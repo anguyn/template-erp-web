@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import partnersApi from '@/service/ServiceLayer/partnersApi';
+import purchaseApi from '@/service/ServiceLayer/purchaseApi';
 
 export default async function handler(req, res) {
-    const { method, query, body } = req;
+    const { method, query } = req;
 
     if (method === 'POST') {
         try {
@@ -10,20 +10,17 @@ export default async function handler(req, res) {
 
             const { id } = query;
 
-            const { select, filter, orderby, top, skip } = body;
-
-            const queryParams = { select, filter, orderby, top, skip };
-
-
             if (!id) {
                 return res.status(400).json({ message: 'ID is required' });
             }
+            
 
-            const response = await partnersApi.getPartnerByCardCode(id, queryParams, cookies);
+            const response = await purchaseApi.reopenGoodReceiptPO(id, cookies);
 
-            // if (!response.ok) {
-            //     throw new Error(`HTTP error! status: ${response.status}`);
-            // }
+            console.log("Tệ", response);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
             const data = await response.json();
 

@@ -92,7 +92,7 @@ const SupplierList = (props) => {
                 select: ['BPCurrenciesCollection', 'BPPaymentMethods', 'CardCode', 'CardName', 'CardForeignName', 'CardType', 'Currency', 'ContactEmployees', 'ContactPerson', 'CurrentAccountBalance', 'DefaultCurrency', 'PayTermsGrpCode', 'VatGroup'],
                 filter: ["CardType eq 'cSupplier'"]
             };
-            const res = await fetch('/api/partner/get-partner', {
+            const res = await fetch('/api/partner/get-partners', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

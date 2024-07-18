@@ -10,17 +10,20 @@ import { SplitButton } from 'primereact/splitbutton';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/router';
 import { useTranslations } from 'next-intl';
+import { useDataStore } from '@/stores/dataStore';
+import { shallow } from 'zustand/shallow';
 
 import { isoToDateFormat } from '@/utils/date';
 import { formatNumberWithComma } from '@/utils/number';
 import { capitalizeWords } from '@/utils/text';
 
 const FeatureBar = (props) => {
-    const { mode, fatherLoading, currentContentLength, docType, selectedBPCode, className, style, handleCopyFrom, handleAddAndView, handleUpdateDocumnent } = props;
-
-    const t = useTranslations("General")
-    // console.log("Mệtmệt: ", docType);
-    // console.log("Dô: ", selectedBPCode);
+    const { mode, fatherLoading, currentContentLength, docType, docEntry, selectedBPCode, isSavable, className, style, handleCopyFrom, handleAddAndView, handleSave, handleRoute } = props;
+    const { documentEntries } = useDataStore(
+        (state) => state,
+        shallow
+    );
+    const t = useTranslations("General");;
     const copyFromBtnRef = useRef();
     const documentListRef = useRef();
 
@@ -48,6 +51,11 @@ const FeatureBar = (props) => {
         },
     ];
 
+    const moduleTypes = {
+        sales: ['Sales Quotation', 'Sales Order', 'Delivery', 'A/R Invoice'],
+        purchasing: ['Purchase Quotation', 'Purchase Order', 'Goods Receipt PO', 'A/P Invoice'],
+    }
+
     const documentType = {
         "Sales Quotaion": 23,
         "Sales Order": 17,
@@ -57,6 +65,8 @@ const FeatureBar = (props) => {
 
     const router = useRouter();
 
+    const { locale } = router;
+
     const [loading, setLoading] = useState(false);
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const [documentListDialogOpen, setDocumentListDialogOpen] = useState(false);
@@ -65,6 +75,7 @@ const FeatureBar = (props) => {
     const [selectedDocuments, setSelectedDocuments] = useState([]);
     const [copyFunctionGroup, setCopyFunctionGroup] = useState([]);
     const [addFunctionGroup, setAddFunctionGroup] = useState(functionGroup1);
+    const [isLastEntry, setIsLastEntry] = useState(false);
 
     const purchaseOrderColumns = useMemo(
         () => [
@@ -352,6 +363,62 @@ const FeatureBar = (props) => {
         setDocumentListDialogOpen(false);
     }
 
+    const getModuleTypeKey = (value) => {
+        for (const [key, values] of Object.entries(moduleTypes)) {
+            if (values.includes(value)) {
+                return key;
+            }
+        }
+        return null;
+    }
+
+    const handleCreateNew = () => {
+        if (docType) {
+            const convertedDocType = docType
+                .toLowerCase()
+                .replace(/\s+/g, '-');
+
+            const selectedModule = getModuleTypeKey(docType);
+
+            if (selectedModule) window.open(`/${locale}/${selectedModule}/${convertedDocType}/create`, '_blank')
+        }
+    }
+
+    const handleRouteDocument = (type) => {
+        if (docEntry && docType) {
+            const noSpaceDocType = docType.replace(/\s+/g, '');
+            const lastEntry = documentEntries[noSpaceDocType];
+            if (!lastEntry) {
+                toast("Từ từ");
+                return;
+            }
+
+
+            const convertedDocType = docType
+                .toLowerCase()
+                .replace(/\s+/g, '-');
+
+            const selectedModule = getModuleTypeKey(docType);
+            switch (type) {
+                case 'first':
+                    router.push(`/${selectedModule}/${convertedDocType}/1`)
+                    break;
+                case 'previous':
+                    router.push(`/${selectedModule}/${convertedDocType}/${Number(docEntry) - 1}`)
+                    break;
+                case 'next':
+                    const url = `/${selectedModule}/${convertedDocType}/${Number(docEntry) + 1}`;
+                    // handleRoute(url)
+                    router.push(`/${selectedModule}/${convertedDocType}/${Number(docEntry) + 1}`)
+                    break;
+                case 'last':
+                    router.push(`/${selectedModule}/${convertedDocType}/${Number(lastEntry)}`)
+                    break;
+
+            }
+        }
+    }
+
     const handleConfirmReplaceData = () => {
         confirmDialog({
             group: "templating",
@@ -362,10 +429,6 @@ const FeatureBar = (props) => {
             // acceptClassName: 'p-button-danger',
             // accept: handleCopyFrom({ replace: true })
         });
-    }
-
-    const handleSaveDocument = () => {
-
     }
 
     const documentDFooterContent = (
@@ -431,13 +494,76 @@ const FeatureBar = (props) => {
             }
 
             setCopyFunctionGroup(functionGroup);
+        } else if (docEntry) {
+            let functionGroup = [];
+            switch (docType) {
+                case "Delivery":
+                    functionGroup = [
+                        {
+                            label: capitalizeWords(t("returnRequest")),
+                            icon: 'pi pi-eye',
+                            command: () => {
+                                window.open(`/${locale}/sales/return-request?copyFrom=${docType.toLowerCase()}&docEntry=${docEntry}`, '_blank')
+                                toast("Bay qua màn hình tạo return req với line là deli hiện tại")
+                            }
+                        },
+                        {
+                            label: capitalizeWords(t("return")),
+                            icon: 'pi pi-plus-circle',
+                            command: () => {
+                                window.open(`/${locale}/sales/return?copyFrom=${docType.toLowerCase()}&docEntry=${docEntry}`, '_blank')
+                                toast("Bay qua màn hình tạo return với line là deli hiện tại")
+                            }
+                        },
+                        {
+                            label: capitalizeWords(t("arInvoice")),
+                            icon: 'pi pi-plus-circle',
+                            command: () => {
+                                window.open(`/${locale}/sales/ar-invoice?copyFrom=${docType.toLowerCase()}&docEntry=${docEntry}`, '_blank')
+                                toast("Bay qua màn hình tạo arInvoice với line là deli hiện tại")
+                            }
+                        },
+                    ];
+                    break;
+
+                case "Goods Receipt PO":
+                    functionGroup = [
+                        {
+                            label: capitalizeWords(t("goodsReturnRequest")),
+                            icon: 'pi pi-file',
+                            command: () => {
+                                window.open(`/${locale}/purchasing/goods-return-request?copyFrom=${docType.toLowerCase()}&docEntry=${docEntry}`, '_blank')
+                                toast("Bay qua màn hình tạo good return req với line là GRPO hiện tại")
+                            }
+                        },
+                        {
+                            label: capitalizeWords(t("goodsReturn")),
+                            icon: 'pi pi-file',
+                            command: () => {
+                                window.open(`/${locale}/purchasing/goods-return?copyFrom=${docType.toLowerCase()}&docEntry=${docEntry}`, '_blank')
+                                toast("Bay qua màn hình tạo goods retn với line là GRPO hiện tại")
+                            }
+                        },
+                        {
+                            label: capitalizeWords(t("apInvoice")),
+                            icon: 'pi pi-file',
+                            command: () => {
+                                window.open(`/${locale}/purchasing/ap-invoice?copyFrom=${docType.toLowerCase()}&docEntry=${docEntry}`, '_blank')
+                                toast("Bay qua màn hình tạo apInv với line là GRPO hiện tại")
+                            }
+                        }
+                    ]
+                    break;
+            }
+
+            setCopyFunctionGroup(functionGroup);
         } else {
             setCopyFunctionGroup([]);
         }
     }, [selectedBPCode]);
 
     useEffect(() => {
-        if (selectedBPCode && selectedDocType) {
+        if (selectedBPCode && selectedDocType && !docEnry) {
             (async () => {
                 try {
                     setLoading(true);
@@ -505,11 +631,35 @@ const FeatureBar = (props) => {
                 }
             })()
         }
-    }, [selectedDocType, selectedBPCode])
+    }, [selectedDocType, selectedBPCode]);
+
+    useEffect(() => {
+        if (docEntry && documentEntries) {
+            const noSpaceDocType = docType.replace(/\s+/g, '');
+            const lastEntry = documentEntries[noSpaceDocType];
+            if (docEntry == lastEntry) {
+                console.log("Xàm tới 1: ", lastEntry)
+                console.log("Xàm tới 2: ", docEntry)
+                setIsLastEntry(true);
+            } else {
+                setIsLastEntry(false);
+            }
+        }
+    }, [docEntry, documentEntries])
 
     return (
         <>
-            <div style={style} className={`card fixed bottom-0 right-[2rem] shadow-2xl flex gap-2 justify-end items-center py-2 ${className}`}>
+            <div style={style} className={`card fixed bottom-0 right-[2rem] shadow-2xl flex gap-2 ${mode == 'view' ? 'justify-between' : 'justify-end'} items-center py-2 ${className}`}>
+                {
+                    mode == 'view' && (
+                        <div className="flex">
+                            <Button disabled={fatherLoading || docEntry == 1} className="scale-75" icon="pi pi-angle-double-left" rounded outlined size="small" severity="secondary" aria-label="Helper" onClick={() => handleRouteDocument('first')} />
+                            <Button disabled={fatherLoading || docEntry == 1} className="scale-75" icon="pi pi-angle-left" rounded outlined size="small" severity="secondary" aria-label="Helper" onClick={() => handleRouteDocument('previous')} />
+                            <Button disabled={fatherLoading || isLastEntry} className="scale-75" icon="pi pi-angle-right" rounded outlined size="small" severity="secondary" aria-label="Helper" onClick={() => handleRouteDocument('next')} />
+                            <Button disabled={fatherLoading || isLastEntry} className="scale-75" icon="pi pi-angle-double-right" rounded outlined size="small" severity="secondary" aria-label="Helper" onClick={() => handleRouteDocument('last')} />
+                        </div>
+                    )
+                }
                 {
                     docType && selectedBPCode && mode == "create" && (
                         <div>
@@ -536,23 +686,24 @@ const FeatureBar = (props) => {
 
                 {
                     mode == "view" && (
-                        <div>
+                        <div className='flex gap-3'>
                             <div className="">
-                                <Button label={t("update")} severity="help" onClick={handleSaveDocument} />
+                                <Button label={t("createNew")} severity="secondary" onClick={handleCreateNew} />
+                            </div>
+                            {
+                                docEntry && (
+                                    <div className="block">
+                                        <Menu model={copyFunctionGroup} popup ref={copyFromBtnRef} id="copy-from-menu" popupAlignment="right" />
+                                        <Button label={t("copyTo")} icon="pi pi-copy" className="" onClick={(event) => copyFromBtnRef.current.toggle(event)} aria-controls="copy-from-menu" aria-haspopup />
+                                    </div>
+                                )
+                            }
+                            <div className="">
+                                <Button label={t("update")} disabled={!isSavable} severity="help" onClick={() => handleSave()} />
                             </div>
                         </div>
                     )
                 }
-
-                {/* <div className="hidden sm:block">
-                    <SplitButton label="Save as Draft & View" onClick={handleClickFunctGroup2} model={functionGroup2} />
-                </div> */}
-                {/* <div className="block sm:hidden">
-                    <SplitButton label="Save" onClick={handleClickFunctGroup2} model={functionGroup2} />
-                </div> */}
-                {/* <div className="block sm:hidden">
-                    <Button label="Cancel" severity="cancel" text onClick={handleRollBack} />
-                </div> */}
             </div>
             <ConfirmDialog
                 group="declarative"

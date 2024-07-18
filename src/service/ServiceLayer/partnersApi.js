@@ -21,8 +21,9 @@ const partnersApi = {
         return response;
     },
 
-    getPartnerByCardCode: async (code, cookies) => {
+    getPartnerByCardCode: async (code, queryParams, cookies) => {
         const url = `${baseURL}('${code}')`;
+        const query = buildQuery(queryParams);  
 
         const options = {
             method: 'GET',
@@ -34,7 +35,7 @@ const partnersApi = {
             credentials: 'include' 
         };
 
-        const response = await fetch(url, options);
+        const response = await fetch(`${url}${query}`, options);
 
         return response;
     }

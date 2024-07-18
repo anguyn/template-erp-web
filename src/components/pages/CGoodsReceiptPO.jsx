@@ -50,6 +50,7 @@ import useStore from '@/stores/useStore';
 import GLAccountList from '../GLAccountList';
 import { isoToDateFormat } from '@/utils/date';
 import { capitalizeWords } from '@/utils/text';
+import { findChangedFields } from '@/utils/dataProcessing'
 
 const CGoodsReceiptPO = ({ initialData, messages }) => {
     const { data } = initialData;
@@ -63,17 +64,24 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
         {
             label: 'Close',
             icon: 'pi pi-times-circle',
-            command: () => { toast("Đang phát triển, cảm phiền bạn đợi nhen ^^") }
+            command: () => {
+                handleCloseGoodsReceiptPO();
+            }
         },
         {
             label: 'Cancel',
             icon: 'pi pi-language',
-            command: () => { toast("Đang phát triển, cảm phiền bạn đợi nhen ^^") }
+            command: () => {
+                handleCancelGoodsReceiptPO();
+            }
         },
         {
             label: 'Duplicate',
             icon: 'pi pi-language',
-            command: () => { toast("Đang phát triển, cảm phiền bạn đợi nhen ^^") }
+            command: () => {
+                toast("Đang phát triển, cảm phiền bạn đợi nhen ^^")
+                window.open(`/${locale}/purchasing/goods-receipt-po/create?docEntry=${docEntry}`, '_blank')
+            }
         },
         {
             separator: true
@@ -95,10 +103,11 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     const exampleItems = Array.from({ length: 1 }, (v, i) => i);
     /** Main */
     const [isHelperOpen, setIsHelperOpen] = useState(false);
-    const [clipboard, setClipboard] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isPosting, setIsPosting] = useState(false);
     const [originalData, setOriginalData] = useState(null);
+    const [hasChanged, setHasChanged] = useState(false);
+    const [updatedInfo, setUpdatedInfo] = useState(null);
     const [generalInfo, setGeneralInfo] = useState({
         DocNumType: "Primary",
         DocNum: null,
@@ -140,7 +149,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
         FederalTaxID: null,
         ImportFileNum: 0,
     });
-    const [docNum, setDocNum] = useState(null);
+    // const [docNum, setDocNum] = useState(null);
     const [selectedSupplier, setSelectedSupplier] = useState(null);
     const [selectedContactPerson, setSelectedContactPerson] = useState(null);
     const [selectedSeriesNo, setSelectedSeriesNo] = useState(null);
@@ -265,9 +274,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     const [glAccountSelectModalOpen, setGLAccountSelectModalOpen] = useState(false);
     const [taxCodeSelectModalOpen, setTaxCodeSelectModalOpen] = useState(false);
     const [batchSerialModalOpen, setBatchSerialModalOpen] = useState(false);
-    const [selectedContentRows, setSelectedContentRows] = useState(null);
     const [selectedFreightChargeRow, setSelectedFreightChargeRow] = useState(null);
-    const [isRounding, setIsRounding] = useState(false);
 
     const [itemServiceWarningVisible, setItemServiceWarningVisible] = useState(false);
     const [savingConfirmVisible, setSavingConfirmVisible] = useState(false);
@@ -283,7 +290,6 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     const fileUploadRef = useRef(null);
 
     const contentItemTableRef = useRef(null);
-    const contentServiceTableRef = useRef(null);
     const freightChargeTableRef = useRef(null);
     const cm = useRef(null);
     // const creationListRef = useRef(null)
@@ -306,6 +312,8 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     }, [companyInfo, currencies])
 
     useEffect(() => {
+        console.log("Dô mánh nè nghen: ", query?.id);
+        setDataLoaded(false);
         const fetchData = async () => {
             try {
                 // Hàm async 0: Lấy count của delivery
@@ -322,14 +330,16 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                     console.log("GRPO: ", dataResult);
 
                     if (!dataResult.message) {
-                        setDocNum(dataResult.DocNum);
-                        setGeneralInfo(prev => ({
+                        // setDocNum(dataResult.DocNum);
+                        const newData = {
+                            AttachmentEntry: dataResult.AttachmentEntry,
                             DocNum: dataResult.DocNum,
                             DocNumType: dataResult.DocNum == dataResult.DocEntry ? "Primary" : "Manual",
                             DocCurrency: dataResult.DocCurrency,
                             NumAtCard: dataResult.NumAtCard,
                             ContactPersonCode: dataResult.ContactPersonCode,
                             SalesPersonCode: dataResult.SalesPersonCode,
+                            DocumentsOwner: dataResult.DocumentsOwner,
                             PostingDate: new Date(dataResult.DocDate),
                             DeliveryDate: new Date(dataResult.DocDueDate),
                             DocumentDate: new Date(dataResult.TaxDate),
@@ -346,18 +356,18 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                             DocumentStatus: dataResult.DocumentStatus,
                             ContactPersonCode: dataResult.ContactPersonCode,
                             PaymentGroupCode: dataResult.PaymentGroupCode,
-                            CashDiscountDateOffset: generalInfo.CashDiscountDateOffset,
-                            CreateQRCodeFrom: generalInfo.CreateQRCodeFrom,
-                            FederalTaxID: generalInfo.FederalTaxID,
-                            ImportFileNum: generalInfo.ImportFileNum,
-                        }));
-                        setOriginalData(dataResult);
+                            PaymentMethod: dataResult.PaymentMethod,
+                            CashDiscountDateOffset: dataResult.CashDiscountDateOffset,
+                            CreateQRCodeFrom: dataResult.CreateQRCodeFrom,
+                            FederalTaxID: dataResult.FederalTaxID,
+                            ImportFileNum: dataResult.ImportFileNum,
+                        };
+                        setGeneralInfo(newData);
+                        setOriginalData(newData);
                         setSelectedContactPerson(contactPersonListOptions.find(person => person.code == dataResult.ContactPersonCode))
                         setSelectedSalesEmployee(salesEmployeeListOptions.find(employee => employee.code == dataResult.SalesPersonCode))
+                        setSelectedOwner(employeeListOption.find(employee => employee.code == dataResult.DocumentsOwner))
                         setSelectedDocType(documentTypeOptions.find(el => el.code == dataResult.DocType));
-                        // setSelectedPaymentTerm(paymentTermOptions.find(pt => pt.code == dataResult.PaymentGroupCode))
-                        // if (dataResult?.DocCurrency !== companyInfo?.LocalCurrency)
-                        //     setSelectedCurrency({ name: 'BP Currency', code: 'bpCurrency', value: { Code: dataResult?.DocCurrency } });
                         setContentData(dataResult?.DocumentLines.map(el => {
                             return {
                                 id: nanoid(6),
@@ -387,6 +397,45 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                 AttachmentEntry: el.AttachmentEntry
                             }
                         }))
+
+                        if (dataResult.CardCode) {
+                            const queryProps = {
+                                select: ['BPCurrenciesCollection', 'BPPaymentMethods', 'CardCode', 'CardName', 'CardForeignName', 'CardType', 'Currency', 'ContactEmployees', 'ContactPerson', 'CurrentAccountBalance', 'DefaultCurrency', 'PayTermsGrpCode', 'VatGroup'],
+                                filter: ["CardType eq 'cSupplier'"]
+                            };
+                            const res = await fetch(`/api/partner/get-partner?id=${dataResult.CardCode}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                credentials: 'include',
+                                body: JSON.stringify(queryProps)
+                            });
+                            const supplierData = await res.json();
+                            setSelectedSupplier(supplierData);
+                            // Contact person
+                            const currentContactPersonList = supplierData?.ContactEmployees;
+                            const currentContactPersonName = supplierData?.ContactPerson;
+
+                            if (currentContactPersonList?.length > 0 && currentContactPersonName) {
+                                const currentContactPerson = currentContactPersonList.find(val => val.Name == currentContactPersonName);
+                                console.log("Selected contact person: ", currentContactPerson)
+                                setContactPersonList(currentContactPersonList);
+                                setContactPersonListOptions(currentContactPersonList.map(item => {
+                                    const names = [item.FirstName, item.MiddleName, item.LastName];
+                                    const fullName = names.filter(name => name !== null && name !== undefined && name !== '').join(' ');
+                                    return { name: item.Name + ' - ' + fullName, code: item.InternalCode }
+                                }))
+                                setSelectedContactPerson({ name: currentContactPerson.Name, code: currentContactPerson.InternalCode });
+                            }
+
+                            const currentPaymentMethods = supplierData.BPPaymentMethods;
+                            if (currentPaymentMethods?.length > 0) {
+                                setPaymentMethodOptions(currentPaymentMethods);
+                                setSelectedPaymentMethod(currentPaymentMethods.find(pm => pm.PaymentMethodCode == dataResult.PaymentMethod))
+                            }
+
+                        }
 
                         if (dataResult.AttachmentEntry) {
                             const attachmentRes = await fetch(`/api/attachment/get-attachment-doc?id=${dataResult.AttachmentEntry}`, {
@@ -510,41 +559,56 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 console.error("Error fetching data: ", error);
             } finally {
                 console.log("Done!")
+                // setLoading(false);
                 setDataLoaded(true);
             }
         };
         fetchData();
-    }, []);
+    }, [query?.id]);
 
     useEffect(() => {
         summarizeTotal();
     }, [contentData, generalInfo?.RoundingAmount, generalInfo?.DiscountPercent]);
 
     useEffect(() => {
+        if (originalData && Object.keys(originalData).length > 0) {
+            const checkingFields = ['ContactPersonCode', 'SalesPersonCode', 'DocumentsOwner', 'NumAtCard', 'DeliveryDate', 'Remark', 'JournalRemark', 'PaymentGroupCode', 'CashDiscountDateOffset', 'FederalTaxID', 'ImportFileNum', 'CreateQRCodeFrom'];
+            const newValues = findChangedFields(originalData, generalInfo, checkingFields);
+            console.log("Hào quang: ", newValues);
+            if (newValues && Object.keys(newValues).length > 0) {
+                setHasChanged(true);
+                setUpdatedInfo(newValues);
+            } else {
+                setHasChanged(false);
+            }
+        }
+    }, [generalInfo, originalData]);
+
+    useEffect(() => {
         const handleWindowClose = (e) => {
-            // if (contentData.length > 1) {
-            //     const confirmationMessage = tM("unsave");
-            //     e.returnValue = confirmationMessage; 
-            //     return confirmationMessage;
-            // }
+            if (hasChanged) {
+                const confirmationMessage = tM("unsave");
+                e.returnValue = confirmationMessage;
+                return confirmationMessage;
+            }
         };
 
         const handleRouteChange = (url) => {
             // console.log("Sao nó khum có vị 2: ", contentData);
-            // if (contentData.length > 1 && !confirm(tM("unsave"))) {
-            //     router.events.emit('routeChangeError');
-            //     throw 'Abort route change. Please ignore this error.';
-            // }
+            if (hasChanged && !confirm(tM("unsave"))) {
+                router.events.emit('routeChangeError');
+                throw 'Abort route change. Please ignore this error.';
+            }
         };
 
-        // window.addEventListener('beforeunload', handleWindowClose);
-        // router.events.on('routeChangeStart', handleRouteChange);
+        window.addEventListener('beforeunload', handleWindowClose);
+        router.events.on('routeChangeStart', handleRouteChange);
 
-        // return () => {
-        //     window.removeEventListener('beforeunload', handleWindowClose);
-        //     router.events.off('routeChangeStart', handleRouteChange);
-        // };
-    }, [contentData]);
+        return () => {
+            window.removeEventListener('beforeunload', handleWindowClose);
+            router.events.off('routeChangeStart', handleRouteChange);
+        };
+    }, [hasChanged])
 
     useEffect(() => {
         if (paymentTermOptions?.length > 0 && (generalInfo?.PaymentGroupCode instanceof Object == false)) {
@@ -606,7 +670,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             <div className="p-2">
                 <p className={`truncate`}>{product?.AccountCode}</p>
             </div>
-            <Button icon="pi pi-list" onClick={() => { setSelectedItemRow({ ...product, rowIndex: row.rowIndex }); setGLAccountSelectModalOpen(true) }} />
+            <Button icon="pi pi-arrow-up-right" onClick={() => { window.open(`/${locale}/chart-of-account?id=${product?.AccountCode}`, '_blank') }} />
         </div>;
     };
 
@@ -780,7 +844,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             <>
                 <Dropdown
                     filter
-                    value={warehouseOptions.find(wh => wh.code == product.Warehouse)}
+                    value={warehouseOptions?.find(wh => wh.code == product.Warehouse)}
                     options={warehouseOptions}
                     onChange={handleEditItemWarehouse}
                     optionLabel="name"
@@ -1493,83 +1557,115 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
 
     const { width: containerWidth, height: containerHeight, ref: containerRef } = useResizeDetector();
 
-    const handleChangeSelectedSupplier = (cardCode) => {
-        const selectedValue = supplierList.find(val => val.CardCode == cardCode)
-        console.log("Supplier: ", selectedValue);
-        setSelectedSupplier(selectedValue);
-        // Contact person
-        const currentContactPersonList = selectedValue?.ContactEmployees;
-        const currentContactPersonName = selectedValue?.ContactPerson;
-
-        // Check default currency xem có giống với local currency khum
-        const defaultCurrency = selectedValue.DefaultCurrency;
-
-        if (defaultCurrency && defaultCurrency != companyInfo.LocalCurrency) {
-            console.log("Lạ nhen: ", defaultCurrency);
-            const currentDefaultCurrency = currencies?.find(c => c.Code == defaultCurrency);
-            setGeneralInfo(prev => ({ ...prev, DocCurrency: currentDefaultCurrency }));
-            setSelectedCurrency({ name: 'BP Currency', code: 'bpCurrency', value: defaultCurrency })
-        }
-
-        // Check và bỏ ra những currency BP không có 
-        const bpCurrencyCollection = selectedValue?.BPCurrenciesCollection;
-        if (bpCurrencyCollection && bpCurrencyCollection?.length > 0) {
-            const uniqueCodes = [...new Set(bpCurrencyCollection
-                .filter(curr => curr.Include === 'tYES')
-                .map(curr => curr.CurrencyCode))];
-
-            console.log("Unique Codes:", uniqueCodes);
-
-            const filteredCurrencies = currencies?.filter(currency => uniqueCodes.includes(currency.Code));
-            setSelectCurrencyOptions(filteredCurrencies);
-        }
-
-        // Kiểm tra xem content data có copy từ bất kì chứng từ nào với khách hàng trước đó chưa
-        if (contentData?.length > 1) {
-            const updatedContentData = contentData?.map(item => {
-                if (item.BaseType !== -1 || item.BaseEntry !== null || item.BaseLine !== null) {
-                    return {
-                        ...item,
-                        BaseType: -1,
-                        BaseEntry: null,
-                        BaseLine: null,
-                    };
-                }
-                return item;
-            });
-
-            setContentData(updatedContentData);
-        }
-
-        if (currentContactPersonList.length > 0 && currentContactPersonName) {
-            const currentContactPerson = currentContactPersonList.find(val => val.Name == currentContactPersonName);
-            console.log("Selected contact person: ", currentContactPerson)
-            setContactPersonList(currentContactPersonList);
-            setContactPersonListOptions(currentContactPersonList.map(item => ({ name: item.Name, code: item.InternalCode })))
-            setSelectedContactPerson({ name: currentContactPerson.Name, code: currentContactPerson.InternalCode });
-        }
-
-        const currentPaymentTerm = paymentTermOptions.find(p => p.code == selectedValue?.PayTermsGrpCode)
-        // console.log("Current Payment Term: ", currentPaymentTerm);
-        setSelectedPaymentTerm(currentPaymentTerm);
-        setPaymentMethodOptions(selectedValue.BPPaymentMethods);
-        // console.log("Lại bị gì nữa: ", selectedValue.BPPaymentMethods[0]);
-
-        // Chỗ này phải lấy vat mặc định cho purchase
-        const supplierTaxCode = (selectedValue?.VatGroup) || (companyInfo.TaxGroupforPurchaseItem);
-        // const supplierTaxCode = selectedValue?.BPAddresses.find(i => i.AddressType == "bo_ShipTo");
-        let supplierTaxRate = 0;
-
-        if (supplierTaxCode) {
-            const supplierTax = vatGroups.find(s => s.Code == supplierTaxCode);
-            if (supplierTax) {
-                supplierTaxRate = supplierTax?.VatGroups_Lines[0]?.Rate
-                console.log("Test tax nha: ", supplierTaxRate)
+    const handleCloseGoodsReceiptPO = async () => {
+        if (query?.id) {
+            try {
+                const res = await fetch(`/api/purchase/close-goods-receipt-po?id=${query?.id}`, {
+                    method: 'POST',
+                    credentials: 'include',
+                });
+                toast.success("Successfully!")
+            } catch (error) {
+                console.error(error);
+                toast.error("There was an error occuring.")
             }
         }
+    }
 
-        setGeneralInfo(prev => ({ ...prev, JournalRemark: 'Goods Receipt PO - ' + selectedValue.CardCode, TaxCode: supplierTaxCode, TaxRate: supplierTaxRate }));
-        setSelectedPaymentMethod(selectedValue.BPPaymentMethods[0] || null);
+    const handleCancelGoodsReceiptPO = async () => {
+        if (query?.id) {
+            try {
+                const res = await fetch(`/api/purchase/cancel-goods-receipt-po?id=${query?.id}`, {
+                    method: 'POST',
+                    credentials: 'include',
+                });
+                toast.success("Successfully!")
+            } catch (error) {
+                console.error(error);
+                toast.error("There was an error occuring.")
+            }
+        }
+    }
+
+    const handleChangeSelectedSupplier = (cardCode) => {
+        if (cardCode) {
+            const selectedValue = supplierList.find(val => val.CardCode == cardCode)
+            console.log("Supplier: ", selectedValue);
+            setSelectedSupplier(selectedValue);
+            // Contact person
+            const currentContactPersonList = selectedValue?.ContactEmployees;
+            const currentContactPersonName = selectedValue?.ContactPerson;
+
+            // Check default currency xem có giống với local currency khum
+            const defaultCurrency = selectedValue?.DefaultCurrency;
+
+            if (defaultCurrency && defaultCurrency != companyInfo.LocalCurrency) {
+                console.log("Lạ nhen: ", defaultCurrency);
+                const currentDefaultCurrency = currencies?.find(c => c.Code == defaultCurrency);
+                setGeneralInfo(prev => ({ ...prev, DocCurrency: currentDefaultCurrency }));
+                setSelectedCurrency({ name: 'BP Currency', code: 'bpCurrency', value: defaultCurrency })
+            }
+
+            // Check và bỏ ra những currency BP không có 
+            const bpCurrencyCollection = selectedValue?.BPCurrenciesCollection;
+            if (bpCurrencyCollection && bpCurrencyCollection?.length > 0) {
+                const uniqueCodes = [...new Set(bpCurrencyCollection
+                    .filter(curr => curr.Include === 'tYES')
+                    .map(curr => curr.CurrencyCode))];
+
+                console.log("Unique Codes:", uniqueCodes);
+
+                const filteredCurrencies = currencies?.filter(currency => uniqueCodes.includes(currency.Code));
+                setSelectCurrencyOptions(filteredCurrencies);
+            }
+
+            // Kiểm tra xem content data có copy từ bất kì chứng từ nào với khách hàng trước đó chưa
+            if (contentData?.length > 1) {
+                const updatedContentData = contentData?.map(item => {
+                    if (item.BaseType !== -1 || item.BaseEntry !== null || item.BaseLine !== null) {
+                        return {
+                            ...item,
+                            BaseType: -1,
+                            BaseEntry: null,
+                            BaseLine: null,
+                        };
+                    }
+                    return item;
+                });
+
+                setContentData(updatedContentData);
+            }
+
+            if (currentContactPersonList?.length > 0 && currentContactPersonName) {
+                const currentContactPerson = currentContactPersonList.find(val => val.Name == currentContactPersonName);
+                console.log("Selected contact person: ", currentContactPerson)
+                setContactPersonList(currentContactPersonList);
+                setContactPersonListOptions(currentContactPersonList.map(item => ({ name: item.Name, code: item.InternalCode })))
+                setSelectedContactPerson({ name: currentContactPerson.Name, code: currentContactPerson.InternalCode });
+            }
+
+            const currentPaymentTerm = paymentTermOptions.find(p => p.code == selectedValue?.PayTermsGrpCode)
+            // console.log("Current Payment Term: ", currentPaymentTerm);
+            setSelectedPaymentTerm(currentPaymentTerm);
+            setPaymentMethodOptions(selectedValue.BPPaymentMethods);
+            // console.log("Lại bị gì nữa: ", selectedValue.BPPaymentMethods[0]);
+
+            // Chỗ này phải lấy vat mặc định cho purchase
+            const supplierTaxCode = (selectedValue?.VatGroup) || (companyInfo.TaxGroupforPurchaseItem);
+            // const supplierTaxCode = selectedValue?.BPAddresses.find(i => i.AddressType == "bo_ShipTo");
+            let supplierTaxRate = 0;
+
+            if (supplierTaxCode) {
+                const supplierTax = vatGroups.find(s => s.Code == supplierTaxCode);
+                if (supplierTax) {
+                    supplierTaxRate = supplierTax?.VatGroups_Lines[0]?.Rate
+                    console.log("Test tax nha: ", supplierTaxRate)
+                }
+            }
+
+            setGeneralInfo(prev => ({ ...prev, JournalRemark: 'Goods Receipt PO - ' + selectedValue.CardCode, TaxCode: supplierTaxCode, TaxRate: supplierTaxRate }));
+            setSelectedPaymentMethod(selectedValue.BPPaymentMethods[0] || null);
+        }
     }
 
     const handleAddNewContentRow = () => {
@@ -2029,6 +2125,26 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
 
     }
 
+    const onChangeSelectAllColumn = () => {
+        if (whichColumnTableModalOpen) {
+            switch (whichColumnTableModalOpen) {
+                case "item":
+                    setVisibleItemColumns(contentColumns);
+
+                    break;
+                case "service":
+                    setVisibleServiceColumns(serviceColumns);
+                    break;
+                case "freight":
+                    setVisibleFreightColumns(freightChargesColumns);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+
     const onTableColumnToggle = (e) => {
         const selectedColumns = e.value;
         let orderedSelectedColumns;
@@ -2278,27 +2394,48 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 const response = await fetch('https://localhost:50000/b1s/v1/Attachments2', {
                     // const response = await fetch('/api/file-upload', {
                     method: 'POST',
-                    body: formData, // Gửi FormData trực tiếp mà không thiết lập Content-Type
-                    credentials: 'include' // Gửi cookies cùng với request
+                    body: formData,
+                    credentials: 'include'
                 });
 
-                if (!response.ok) { // Kiểm tra phản hồi có ok không
+                if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                const dataResult = await response.json(); // Chuyển đổi phản hồi thành JSON
+                const dataResult = await response.json();
 
-                console.log('Upload thành công:', dataResult); // Log dữ liệu kết quả từ phản hồi
-                toast.success('Upload thành công!'); // Hiển thị thông báo thành công
+                console.log('Upload thành công:', dataResult);
+                toast.success('Upload thành công!');
                 return dataResult.AbsoluteEntry; // Trả về giá trị AbsoluteEntry
-            } catch (error) { // Xử lý lỗi trong quá trình fetch
-                console.error('Lỗi khi upload:', error); // Log lỗi ra console
-                toast.error('Lỗi khi upload.'); // Hiển thị thông báo lỗi
-                return false; // Trả về false khi gặp lỗi
+            } catch (error) {
+                console.error('Lỗi khi upload:', error);
+                toast.error('Lỗi khi upload.');
+                return false;
             }
         }
-        return null; // Trả về null nếu không có file nào để upload
+        return null;
     };
+
+    const handleSaveDocument = async () => {
+        if (Object.keys(updatedInfo)?.length > 0) {
+            console.log("Thiệt luôn hả? : ", updatedInfo);
+            setIsPosting(true);
+            try {
+                const res = await fetch(`/api/purchase/update-goods-receipt-po?id=${query?.id}`, {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    body: JSON.stringify(updatedInfo)
+                });
+                console.log("Kết qỉa: ", res)
+                toast.success("Updated successfully!");
+            } catch (error) {
+                console.error(error);
+                toast.error("There was an error occurred");
+            } finally {
+                setIsPosting(false);
+            }
+        }
+    }
 
     const handleAddAndView = async () => {
         // Validate dữ liệu
@@ -2463,7 +2600,9 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                 <div className="w-full">
                                     <div className="card p-2 sm:p-4 relative">
                                         <h3>{tG('viewDocument')}</h3>
-                                        <Button className="absolute top-1 right-1 scale-75 sm:scale-50" icon="pi pi-info" rounded outlined size="small" severity="secondary" aria-label="Helper" onClick={() => setIsHelperOpen(true)} />
+                                        <div className="flex gap-3 absolute top-1 right-1">
+                                            <Button className="scale-75 sm:scale-50" icon="pi pi-info" rounded outlined size="small" severity="secondary" aria-label="Helper" onClick={() => setIsHelperOpen(true)} />
+                                        </div>
 
                                         <div className="flex justify-center sm:justify-start flex-col sm:flex-row py-2 gap-2 sm:gap-0">
                                             <div className="flex gap-3 sm:gap-0 sm:flex-col">
@@ -2499,7 +2638,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                     <label className='font-semibold'>{t('supplier')} <span className="text-red-700 font-semibold">*</span></label>
                                                     <div className="flex">
                                                         <div className="w-full p-inputtext p-disabled p-variant-filled p-component flex-1 !min-h-[42px]"><span className="h-[21px]">{generalInfo.CardCode || ''}</span></div>
-                                                        <Button icon="pi pi-arrow-up-right" onClick={() => {  window.open(`/${locale}/business-partner/${generalInfo?.CardCode}`, '_blank') }} />
+                                                        <Button icon="pi pi-arrow-up-right" onClick={() => { window.open(`/${locale}/business-partner/${generalInfo?.CardCode}`, '_blank') }} />
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-column gap-2">
@@ -2508,12 +2647,12 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('contactPerson')}</label>
-                                                    <Dropdown filter checkmark options={contactPersonListOptions} value={selectedContactPerson} optionLabel="name"
-                                                        placeholder="Select contact person" onChange={(e) => setSelectedContactPerson(e.value)} className="w-full" />
+                                                    <Dropdown filter showClear checkmark options={contactPersonListOptions} value={selectedContactPerson} optionLabel="name"
+                                                        placeholder="Select contact person" onChange={(e) => { setSelectedContactPerson(e.value); setGeneralInfo(prev => ({ ...prev, ContactPersonCode: e.value?.Name ? e.value?.Name : null })) }} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('supplierRefNo')}</label>
-                                                    <InputText variant="filled" aria-describedby="supplier-ref-no" />
+                                                    <InputText variant="filled" aria-describedby="supplier-ref-no" value={generalInfo.NumAtCard} onChange={(e) => setGeneralInfo(prev => ({ ...prev, NumAtCard: e.target.value ? e.target.value : null }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('postingDate')}</label>
@@ -2521,11 +2660,11 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('dueDate')} <span className="text-red-700 font-semibold">*</span></label>
-                                                    <Calendar value={generalInfo.DeliveryDate} disabled={generalInfo.DocumentStatus == "bost_Close"} onChange={(e) => setGeneralInfo(prev => ({ ...prev, DeliveryDate: e.value }))} className="text-base" showIcon dateFormat="dd/mm/yy" />
+                                                    <Calendar value={generalInfo.DeliveryDate} disabled={generalInfo.DocumentStatus == "bost_Close"} minDate={generalInfo.PostingDate} onChange={(e) => setGeneralInfo(prev => ({ ...prev, DeliveryDate: e.value }))} className="text-base" showIcon dateFormat="dd/mm/yy" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('documentDate')}</label>
-                                                    <Calendar value={generalInfo.DocumentDate} onChange={(e) => setGeneralInfo(prev => ({ ...prev, DocumentDate: e.value }))} className="text-base" showIcon dateFormat="dd/mm/yy" />
+                                                    <Calendar value={generalInfo.DocumentDate} disabled onChange={(e) => setGeneralInfo(prev => ({ ...prev, DocumentDate: e.value }))} className="text-base" showIcon dateFormat="dd/mm/yy" />
                                                 </div>
                                                 {/* </div> */}
 
@@ -2536,13 +2675,13 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>Buyer</label>
-                                                    <Dropdown filter value={selectedSalesEmployee} onChange={(e) => setSelectedSalesEmployee(e.value)} options={salesEmployeeListOptions} optionLabel="name"
+                                                    <Dropdown filter value={selectedSalesEmployee} onChange={(e) => { setSelectedSalesEmployee(e.value); setGeneralInfo(prev => ({ ...prev, SalesPersonCode: e.value?.code ? e.value?.code : null })) }} options={salesEmployeeListOptions} optionLabel="name"
                                                         placeholder="Select a buyer" className="w-full" />
 
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('owner')}</label>
-                                                    <Dropdown filter showClear value={selectedOwner} onChange={(e) => setSelectedOwner(e.value)} options={employeeListOption} optionLabel="name"
+                                                    <Dropdown filter showClear value={selectedOwner} onChange={(e) => { setSelectedOwner(e.value); setGeneralInfo(prev => ({ ...prev, DocumentsOwner: e.value?.code ? e.value?.code : null })) }} options={employeeListOption} optionLabel="name"
                                                         placeholder="Select an owner" className="w-full" />
                                                 </div>
                                             </div>
@@ -2632,7 +2771,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                                 ))
                                                             }
                                                             {
-                                                                selectedDocType?.code == 'dDocument_Service' && serviceColumns && serviceColumns.length > 0 && serviceColumns.map((col, index) => (
+                                                                selectedDocType?.code == 'dDocument_Service' && visibleServiceColumns && visibleServiceColumns.length > 0 && visibleServiceColumns.map((col, index) => (
                                                                     <Column
                                                                         key={index}
                                                                         header={col.header}
@@ -2650,7 +2789,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                             <Column body={<Skeleton />} style={{ width: '3rem' }} />
                                                             <Column body={<Skeleton />} headerStyle={{ width: '3rem' }} />
                                                             {
-                                                                contentColumns && contentColumns.length > 0 && contentColumns.map((col, index) => (
+                                                                visibleItemColumns && visibleItemColumns.length > 0 && visibleItemColumns.map((col, index) => (
                                                                     <Column
                                                                         key={index}
                                                                         // ref={index === 1 ? columnRef : null}
@@ -2705,7 +2844,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                             <Column rowReorder style={{ width: '3rem' }} />
                                                             <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
                                                             {
-                                                                freightChargesColumns && freightChargesColumns.length > 0 && freightChargesColumns.map((col, index) => (
+                                                                visibleFreightColumns && visibleFreightColumns.length > 0 && visibleFreightColumns.map((col, index) => (
                                                                     <Column
                                                                         key={index}
                                                                         // ref={index === 1 ? columnRef : null}
@@ -2724,7 +2863,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                             <Column body={<Skeleton />} style={{ width: '3rem' }} />
                                                             <Column body={<Skeleton />} headerStyle={{ width: '3rem' }} />
                                                             {
-                                                                freightChargesColumns && freightChargesColumns.length > 0 && freightChargesColumns.map((col, index) => (
+                                                                visibleFreightColumns && visibleFreightColumns.length > 0 && visibleFreightColumns.map((col, index) => (
                                                                     <Column
                                                                         key={index}
                                                                         // ref={index === 1 ? columnRef : null}
@@ -2754,7 +2893,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                             </li>
                                                             <li className="flex items-center justify-between py-1.5 px-2 border-top-1 border-300 flex-wrap">
                                                                 <div className="text-500 w-6 md:w-4 font-medium">Discount</div>
-                                                                <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"><InputNumber inputId="percent" className='w-full text-right p-inputtext-sm' min={0} max={100} suffix=" %" disabled value={generalInfo.DiscountPercent} onChange={(e) => setGeneralInfo(prev => ({ ...prev, DiscountPercent: e.target.value }))} />
+                                                                <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"><InputNumber inputId="percent" className='w-full text-right p-inputtext-sm' min={0} max={100} suffix=" %" disabled value={generalInfo.DiscountPercent} onValueChange={(e) => setGeneralInfo(prev => ({ ...prev, DiscountPercent: e.target.value }))} />
                                                                 </div>
                                                                 <div className="w-6 md:w-4 flex justify-content-end">
                                                                     {formatNumberWithComma(generalInfo.DiscountAmount)} {' '} {`${generalInfo?.DocCurrency instanceof Object == true ? generalInfo?.DocCurrency?.Code : generalInfo?.DocCurrency}`}
@@ -2890,21 +3029,21 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px]">
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>Journal Remark</label>
-                                                    <InputText aria-describedby="supplier-ref-no" value={generalInfo.JournalRemark} onChange={(e) => setGeneralInfo(prev => ({ ...prev, JournalRemark: e.value }))} />
+                                                    <InputText aria-describedby="supplier-ref-no" value={generalInfo.JournalRemark} onChange={(e) => setGeneralInfo(prev => ({ ...prev, JournalRemark: e.target.value ? e.target.value : null }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>Payment Term</label>
-                                                    <Dropdown loading={!dataLoaded} checkmark filter options={paymentTermOptions} value={selectedPaymentTerm} optionLabel="name"
-                                                        placeholder={!dataLoaded ? "Loading payment term... " : "Select payment term"} onChange={(e) => setSelectedPaymentTerm(e.value)} className="w-full" />
+                                                    <Dropdown showClear loading={!dataLoaded} checkmark filter options={paymentTermOptions} value={selectedPaymentTerm} optionLabel="name"
+                                                        placeholder={!dataLoaded ? "Loading payment term... " : "Select payment term"} onChange={(e) => { setSelectedPaymentTerm(e.value); setGeneralInfo(prev => ({ ...prev, PaymentGroupCode: e.value?.code ? e.value?.code : null })) }} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>Payment Method</label>
                                                     <Dropdown showClear loading={!dataLoaded} filter options={paymentMethodOptions} value={selectedPaymentMethod} optionLabel="PaymentMethodCode" dataKey='PaymentMethodCode'
-                                                        onChange={(e) => setSelectedPaymentMethod(e.value)} placeholder={!dataLoaded ? "Loading payment method... " : "Select payment method"} className="w-full" />
+                                                        onChange={(e) => { setSelectedPaymentMethod(e.value); setGeneralInfo(prev => ({ ...prev, PaymentMethod: e.value?.PaymentMethodCode ? e.value?.PaymentMethodCode : null })) }} placeholder={!dataLoaded ? "Loading payment method... " : "Select payment method"} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>Cash Discount Date Offset</label>
-                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.CashDiscountDateOffset} onChange={(e) => setGeneralInfo(prev => ({ ...prev, CashDiscountDateOffset: e.target.value }))} />
+                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.CashDiscountDateOffset} onValueChange={(e) => setGeneralInfo(prev => ({ ...prev, CashDiscountDateOffset: e.value ? e.value : null }))} />
                                                 </div>
                                                 {/* <div className="flex flex-column gap-2">
                                             <label className='font-semibold'>BP Project</label>
@@ -2913,15 +3052,15 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                         </div> */}
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>Create QR Code From</label>
-                                                    <InputTextarea autoResize rows={2} value={generalInfo.CreateQRCodeFrom} onChange={(e) => setGeneralInfo(prev => ({ ...prev, CreateQRCodeFrom: e.target.value }))} />
+                                                    <InputTextarea autoResize rows={2} value={generalInfo.CreateQRCodeFrom} onChange={(e) => setGeneralInfo(prev => ({ ...prev, CreateQRCodeFrom: e.target.value ? e.target.value : null }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>Federal Tax ID</label>
-                                                    <InputText aria-describedby="federal-tax-id" value={generalInfo.FederalTaxID} onChange={(e) => setGeneralInfo(prev => ({ ...prev, FederalTaxID: e.target.value }))} />
+                                                    <InputText aria-describedby="federal-tax-id" value={generalInfo.FederalTaxID} onChange={(e) => setGeneralInfo(prev => ({ ...prev, FederalTaxID: e.target.value ? e.target.value : null }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>Order Number</label>
-                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.ImportFileNum} onChange={(e) => setGeneralInfo(prev => ({ ...prev, ImportFileNum: e.target.value }))} />
+                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.ImportFileNum} onValueChange={(e) => setGeneralInfo(prev => ({ ...prev, ImportFileNum: e.target.value ? e.target.value : null }))} />
                                                 </div>
                                             </div>
                                         </section>
@@ -2943,17 +3082,20 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
 
                             <FeatureBar
                                 mode="view"
-                                fatherLoading={loading}
+                                fatherLoading={!dataLoaded}
                                 currentContentLength={contentData?.length}
                                 docType="Goods Receipt PO"
-                                selectedBPCode={selectedSupplier?.CardCode}
+                                docEntry={query?.id}
+                                isSavable={hasChanged}
+                                // selectedBPCode={selectedSupplier?.CardCode}
                                 style={{ width: `${containerWidth}px`, maxWidth: `${containerWidth}px` }}
                                 className={`!max-w-[${containerWidth}px] !w-[${containerWidth}px]`}
-                                handleAddAndView={() => setSavingConfirmVisible(true)}
+                                handleSave={handleSaveDocument}
+                                handleRoute={(value) => router.push(value)}
                                 handleCopyFrom={handleCopyFrom}
                             />
 
-                            <SupplierList supplierSelectModalOpen={supplierSelectModalOpen} setSupplierSelectModalOpen={(value) => setSupplierSelectModalOpen(value)} supplierList={supplierList} orignalSelectedSupplier={selectedSupplier} setSupplier={handleChangeSelectedSupplier} setSupplierList={setSupplierList} setSupplierListOptions={setSupplierListOptions} />
+                            {/* <SupplierList supplierSelectModalOpen={supplierSelectModalOpen} setSupplierSelectModalOpen={(value) => setSupplierSelectModalOpen(value)} supplierList={supplierList} orignalSelectedSupplier={selectedSupplier} setSupplier={handleChangeSelectedSupplier} setSupplierList={setSupplierList} setSupplierListOptions={setSupplierListOptions} /> */}
                             <ItemList itemSelectModalOpen={itemSelectModalOpen} setItemSelectModalOpen={(value) => setItemSelectModalOpen(value)} itemList={itemList} selectedItemRow={selectedItemRow?.Item} setItem={handleSetItems} setItemList={setItemList} />
                             <GLAccountList glAccountSelectModalOpen={glAccountSelectModalOpen} setGLAccountSelectModalOpen={(value) => setGLAccountSelectModalOpen(value)} selectedItemRow={selectedItemRow?.Item} setAccount={handleSetAccount} glAccountList={glAccountList} setGLAccountList={setGLAccountList} />
                             <BatchSerialCreation mode="view" batchSerialModalOpen={batchSerialModalOpen} item={selectedItemRow} setBatchSerialModalOpen={setBatchSerialModalOpen} setBatchCreations={handleBatchCreation} setSerialCreations={handleSerialCreation} />
@@ -3045,6 +3187,10 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                 breakpoints={{ '960px': '75vw', '641px': '100vw' }}
                             >
                                 <div clasName="m-0 p-2 pt-1">
+                                    <div className="flex gap-2 justify-between">
+                                        <span className="text-lg">{whichColumnTableModalOpen == "item" ? visibleItemColumns?.length : whichColumnTableModalOpen == "service" ? visibleServiceColumns?.length : visibleFreightColumns?.length} column(s) selected</span>
+                                        <Button label="Select All" onClick={onChangeSelectAllColumn} text disabled={whichColumnTableModalOpen == "item" ? (contentColumns?.length == visibleItemColumns?.length) : whichColumnTableModalOpen == "service" ? (serviceColumns?.length == visibleServiceColumns?.length) : freightChargesColumns?.length == visibleFreightColumns} />
+                                    </div>
                                     <ListBox
                                         filter
                                         listStyle={{ height: '400px' }}
@@ -3054,7 +3200,8 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                         onChange={onTableColumnToggle}
                                         options={whichColumnTableModalOpen == "item" ? contentColumns : whichColumnTableModalOpen == "service" ? serviceColumns : freightChargesColumns}
                                         optionLabel="header"
-                                        className="w-full mt-3" />
+                                        className="w-full mt-3"
+                                    />
                                 </div>
                             </Dialog>
 
@@ -3067,14 +3214,14 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                 accept={() => acceptChangeItemServiceType(documentTypeOptions.find(type => type.code != selectedDocType.code))}
                             />
 
-                            <ConfirmDialog group="save" key="savewarning"
+                            {/* <ConfirmDialog group="save" key="savewarning"
                                 visible={savingConfirmVisible}
                                 onHide={() => setSavingConfirmVisible(false)}
                                 message={tM("save")}
                                 header="Confirmation"
                                 icon="pi pi-exclamation-triangle"
                                 accept={() => handleAddAndView()}
-                            />
+                            /> */}
 
                             {
                                 isPosting && (

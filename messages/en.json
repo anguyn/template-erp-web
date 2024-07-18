@@ -21,6 +21,10 @@
         "signInFailed": "Sign in failed.",
         "pleaseTryAgainLater": "Please try again later"
     },
+    "Home": {
+        "homePage": "Home page",
+        "sapWebClient": "SAP Web Client"
+    },
     "Messages": {
         "unsave": "Unsaved data will be lost. Do you want to continue without saving?",
         "save": "You cannot change this document after you have added it. Continue?",
@@ -94,6 +98,12 @@
         "goodsReceiptPO": "Goods receipt PO",
         "goodsIssue": "Goods issue",
         "goodsReceipt": "Goods receipt",
+        "goodsReturnRequest": "Goods return request",
+        "goodsReturn": "Goods return",
+        "returnRequest": "Return request",
+        "return": "Return",
+        "apInvoice": "A/P invoice",
+        "arInvoice": "A/R invoice",
         "searchKeyWord": "Search key word",
         "enterKeyWord": "Enter key word",
         "customerCode": "Customer code",
@@ -126,6 +136,7 @@
         "accounting": "Accounting",
         "attachment": "Attachment",
         "create": "Create",
+        "createNew": "Create new",
         "export": "Export",
         "filter": "Filter",
         "filterOption": "Fitler option",
@@ -141,6 +152,7 @@
         "add&new": "Add & New",
         "add&back": "Add & Back",
         "copyFrom": "Copy from",
+        "copyTo": "Copy to",
         "update": "Update"
     },
     "Languages": {
