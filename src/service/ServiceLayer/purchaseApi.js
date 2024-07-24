@@ -285,7 +285,6 @@ const purchaseApi = {
 
     createGoodsReceiptPO: async (data, cookies) => {
         const url = `${baseURL}/PurchaseDeliveryNotes`;
-        console.log("Ra gì: ", data);
 
         const options = {
             method: 'POST',

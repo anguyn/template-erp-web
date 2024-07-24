@@ -8,7 +8,12 @@
     {
       "name": "CÔNG TY TNHH CJ OLIVENETWORKS VINA",
       "code": "CJ_OLIVENETWORKS_VINA_LTD",
-      "country": "AU"
+      "country": "KR"
+    },
+    {
+      "name": "VAS_PACKAGE",
+      "code": "VAS_PACKAGE",
+      "country": "Vn"
     }
   ]
 }

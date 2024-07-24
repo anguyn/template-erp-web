@@ -71,15 +71,9 @@ export const useLayoutStore = createSelectors(createWithEqualityFn(
                         state.layoutState.profileSidebarVisible = !get().layoutState.profileSidebarVisible;
                     }),
                 globalLoader: false,
-                lang: 'en',
                 setGlobalLoader: (value) => {
                     set((state) => {
                         state.globalLoader = value;
-                    })
-                },
-                setLang: (value) => {
-                    set((state) => {
-                        state.lang = value;
                     })
                 }
             })

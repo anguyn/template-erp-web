@@ -25,6 +25,8 @@ const globalApi = {
         const url = `${baseURL}/CompanyService_GetAdminInfo`;
         let query = buildQuery(props);
 
+        console.log("Bị gì nữa?", url)
+
         const options = {
             method: 'POST',
             headers: {

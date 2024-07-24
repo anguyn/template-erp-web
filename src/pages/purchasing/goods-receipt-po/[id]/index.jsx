@@ -7,7 +7,7 @@ const GoodsReceiptPO = ({ initialData, messages }) => {
     )
 }
 
-GoodsReceiptPO.messages = ['General', 'CreateGoodsReceiptPO', 'GoodsReceiptPO', 'PageLayout', 'Languages', 'Navigation', 'Dialog', 'Messages'];
+GoodsReceiptPO.messages = ['General', 'GoodsReceiptPO', 'PageLayout', 'Languages', 'Navigation', 'Dialog', 'Messages'];
 
 
 export const getServerSideProps = async (context) => {

@@ -1,5 +1,5 @@
 
-import Head from 'next/head';
+import Head from 'next/head'
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useResizeDetector } from 'react-resize-detector';
 import { useRouter } from 'next/router'
@@ -11,87 +11,69 @@ import toast from 'react-hot-toast';
 import { nanoid } from 'nanoid';
 
 import { Accordion, AccordionTab } from 'primereact/accordion';
-import { Button } from 'primereact/button';
-import { BlockUI } from 'primereact/blockui';
-import { Calendar } from 'primereact/calendar';
 import { Checkbox } from "primereact/checkbox";
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import { ContextMenu } from 'primereact/contextmenu';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
-import { Dialog } from 'primereact/dialog';
 import { Divider } from 'primereact/divider';
 import { Dropdown } from 'primereact/dropdown';
 import { InputNumber } from 'primereact/inputnumber';
+import { Button } from 'primereact/button';
+import { Tooltip } from 'primereact/tooltip';
+import { Calendar } from 'primereact/calendar';
+import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Icon } from '@iconify/react';
 import { FileUpload } from 'primereact/fileupload';
 import { ListBox } from 'primereact/listbox';
 import { Message } from 'primereact/message';
-import { MultiSelect } from 'primereact/multiselect';
 import { ProgressBar } from 'primereact/progressbar';
 import { Panel } from 'primereact/panel';
 import { Tag } from 'primereact/tag';
-import { Tooltip } from 'primereact/tooltip';
 import { Skeleton } from 'primereact/skeleton';
+import { BlockUI } from 'primereact/blockui';
+import { MultiSelect } from 'primereact/multiselect';
 
 import ItemList from '@/components/ItemList';
-import SupplierList from '@/components/SupplierList';
+import CustomerList from '@/components/CustomerList';
 import SalesTaxCodeList from '@/components/TaxCodeList/Sales';
 import BatchSerialCreation from "@/components/BatchSerial/Create"
-import GRPOHelper from '@/components/Dialog/Helpers/GoodsReceiptPO';
-
+// import GRPOHelper from '@/components/Dialog/Helpers/Delivery';
 import FeatureBar from '@/components/FeatureBar';
 import Loader from '@/components/Loader';
+
 import { formatNumberWithComma } from '@/utils/number';
+import { capitalizeWords } from '@/utils/text';
 
 import { useCompanyStore } from '@/stores/companyStore';
 import useStore from '@/stores/useStore';
 import GLAccountList from '../GLAccountList';
-import { isoToDateFormat } from '@/utils/date';
-import { capitalizeWords } from '@/utils/text';
 
-const CGoodsReceiptPO = ({ initialData, messages }) => {
+const SELECT = ["AttachmentEntry", "DefaultWarehouse", "ItemCode", "ItemClass", "ItemName", "ForeignName",
+    "ItemWarehouseInfoCollection", "ItemPrices", "IssueMethod", "ItemType", "ItemDistributionRules", "Picture",
+    "ManageBatchNumbers", "ManageByQuantity", "ManageSerialNumbers", "ManageStockByWarehouse", "QuantityOnStock",
+    "SalesItem", "SalesVATGroup", "SalesUnit", "PurchaseItem", "PurchaseUnit", "PurchaseVATGroup"];
+
+const CCreateDelivery = ({ initialData, messages }) => {
     // console.log("Haizz: ", messages);
     const { data } = initialData;
     // const hasHydrated = useHydration(useCompanyStore);
     // const { companyInfo, currencies } = useCompanyStore((state) => state);
     const companyInfo = useStore(useCompanyStore, (state) => state.companyInfo);
     const currencies = useStore(useCompanyStore, (state) => state.currencies);
-    console.log("Dô chién nài: ", initialData);
-    console.log("Hè", companyInfo)
-    console.log("Hè 2", currencies)
+    // console.log("Dô chién nài: ", initialData);
+    // console.log("Hè", companyInfo)
+    // console.log("Hè 2", currencies)
 
-    const contextMenuItems = [
-        {
-            label: 'Close',
-            icon: 'pi pi-times-circle',
-            command: () => { toast("Đang phát triển, cảm phiền bạn đợi nhen ^^") }
-        },
-        {
-            label: 'Cancel',
-            icon: 'pi pi-language',
-            command: () => { toast("Đang phát triển, cảm phiền bạn đợi nhen ^^") }
-        },
-        {
-            label: 'Duplicate',
-            icon: 'pi pi-language',
-            command: () => { toast("Đang phát triển, cảm phiền bạn đợi nhen ^^") }
-        },
-        {
-            separator: true
-        },
-        {
-            label: 'Print',
-            icon: 'pi pi-print',
-            command: () => { toast("Đang phát triển, cảm phiền bạn đợi nhen ^^") }
-        }
-    ];
+    // if (!hasHydrated) {
+    //     return <div>Loading...</div>
+    // }
+    // console.log("Hè: ", companyInfo);
 
     const router = useRouter();
-    const { query } = router;
-    const t = useTranslations('GoodsReceiptPO');
+    const { query, locale } = router;
+    const t = useTranslations('Delivery');
     const tG = useTranslations('General');
     const tM = useTranslations('Messages');
     /** Skeleton */
@@ -102,6 +84,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     const [loading, setLoading] = useState(true);
     const [isPosting, setIsPosting] = useState(false);
     // const [generalInfo, setGeneralInfo] = useState(null);
+    const [copyDocument, setCopyDocument] = useState(null);
     const [generalInfo, setGeneralInfo] = useState({
         DocNumType: "Primary",
         DocNum: null,
@@ -144,12 +127,12 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
         ImportFileNum: 0,
     });
     const [docNum, setDocNum] = useState(null);
-    const [selectedSupplier, setSelectedSupplier] = useState(null);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [selectedContactPerson, setSelectedContactPerson] = useState(null);
     const [selectedSeriesNo, setSelectedSeriesNo] = useState(null);
     const [selectedCurrency, setSelectedCurrency] = useState(null);
     // const [selectedCurrency, setSelectedCurrency] = useState({ name: 'Local Currency', code: 'localCurrency', currency: companyInfo?.LocalCurrency });
-    const [selectedDocType, setSelectedDocType] = useState({ name: 'Item', code: 'dDocument_Items' },);
+    const [selectedDocType, setSelectedDocType] = useState({ name: 'Item', code: 'dDocument_Items' });
     const [selectedSalesEmployee, setSelectedSalesEmployee] = useState(null);
     const [selectedOwner, setSelectedOwner] = useState(null);
     const [selectedPaymentTerm, setSelectedPaymentTerm] = useState(null);
@@ -158,9 +141,9 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     const [selectedBPProject, setSelectedBPProject] = useState(null);
     const [selectedShipToBPAddress, setSelectedShipToBPAddress] = useState(null);
     const [selectedBillToBPAddress, setSelectedBillToBPAddress] = useState(null);
-    const [supplierList, setSupplierList] = useState([]);
-    const [supplierSelectModalOpen, setSupplierSelectModalOpen] = useState(false);
-    const [supplierListOptions, setSupplierListOptions] = useState([]);
+    const [customerList, setCustomerList] = useState([]);
+    const [customerSelectModalOpen, setCustomerSelectModalOpen] = useState(false);
+    const [customerListOptions, setCustomerListOptions] = useState([]);
     const [contactPersonList, setContactPersonList] = useState([]);
     const [contactPersonListOptions, setContactPersonListOptions] = useState([]);
     const [salesEmployeeList, setSalesEmployeeList] = useState(data?.salesEmployee || []);
@@ -194,6 +177,10 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
         { name: 'Japan', code: 'jp' },
         { name: 'Korea', code: 'kr' },
     ]);
+    const [seriesNoOptions, setSeriesNoOptions] = useState([
+        { name: 'Primary', code: 'primary' },
+        { name: 'Manual', code: 'manual' }
+    ]);
     const [warehouseOptions, setWarehouseOptions] = useState([
         {
             code: 1,
@@ -206,10 +193,12 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     //     { name: 'System Currency', code: 'systemCurrency', currency: companyInfo?.SystemCurrency },
     //     { name: 'BP Currency', code: 'bpCurrency', currency: null }
     // ]);
-    const [documentTypeOptions, setDocumentTypeOptions] = useState([
-        { name: 'Item', code: 'dDocument_Items' },
-        { name: 'Service', code: 'dDocument_Service' }
-    ]);
+
+    const documentTypeOptions = useMemo(() => [
+        { name: t("item"), code: 'dDocument_Items' },
+        { name: t('service'), code: 'dDocument_Service' }
+    ], [locale]);
+
     const [gradeOptions, setGradeOptions] = useState([
         { name: 'Low', code: '01' },
         { name: 'Middle', code: '02' },
@@ -228,7 +217,6 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             ItemDescription: '',
             Quantity: '',
             UnitPrice: null,
-            Rate: null,
             Currency: null,
             AccountCode: '',
             AccountName: '',
@@ -293,28 +281,108 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     const contentItemTableRef = useRef(null);
     const contentServiceTableRef = useRef(null);
     const freightChargeTableRef = useRef(null);
-    const cm = useRef(null);
     // const creationListRef = useRef(null)
 
     useEffect(() => {
-        if (companyInfo && currencies?.length > 0) {
-            setLoading(false);
-            setSelectCurrencyOptions(currencies);
-            setGeneralInfo(prev => ({
-                ...prev,
-                DocCurrency: prev.DocCurrency ? currencies?.find(c => c.Code == prev.DocCurrency) : currencies?.find(c => c.Code == companyInfo?.LocalCurrency)
-            }));
-            setSelectedCurrency({ name: 'Local Currency', code: 'localCurrency', currency: companyInfo?.LocalCurrency });
-        }
+        setLoading(false);
+        setSelectCurrencyOptions(currencies);
+        setGeneralInfo({
+            DocNumType: "Primary",
+            DocNum: null,
+            DocCurrency: currencies?.find(c => c.Code == companyInfo?.LocalCurrency),
+            PostingDate: new Date(),
+            DeliveryDate: new Date(),
+            DocumentDate: new Date(),
+            Remark: '',
+            TotalBeforeDiscount: 0,
+            DiscountPercent: 0,
+            DiscountAmount: 0,
+            FreightAmount: 0,
+            Rounding: false,
+            RoundingAmount: 0,
+            TaxCode: null,
+            TaxRate: 0,
+            TaxAmount: 0,
+            TotalAmount: 0,
+            FreightCharges: [{
+                ExpenseCode: null,
+                Name: null,
+                Remarks: null,
+                NetAmount: null,
+                GrossAmount: null,
+                TaxGroup: null,
+                TaxCode: null,
+                TaxRate: null,
+                TaxAmount: null,
+                TotalTaxAmount: 0,
+                BaseDocType: -1,
+                BaseDocEntry: null,
+                BaseDocLine: null
+            }],
+            JournalRemark: ''
+        });
+        setSelectedCurrency({ name: 'Local Currency', code: 'localCurrency', currency: companyInfo?.LocalCurrency });
     }, [companyInfo, currencies])
 
     useEffect(() => {
+        const fetchItems = async (top = 1000, skip = 0) => {
+            const props = {
+                select: SELECT,
+                top,
+                skip,
+                filter: ["PurchaseItem eq 'tYES'"]
+            }
 
+            console.log("Xin tì: ", props)
+            const res = await fetch('/api/inventory/get-item', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(props),
+            });
+
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+
+            const dataResult = await res.json();
+            return dataResult.value;
+        };
+
+        // Function to handle fetching all items in batches and updating state
+        const fetchAllItemsInBatches = async (count) => {
+            const numberOfBatches = Math.ceil(count / 1000);
+            const fetchPromises = [];
+            for (let i = 0; i < numberOfBatches; i++) {
+                fetchPromises.push(fetchItems(1000, i * 1000));
+            }
+
+            try {
+                // As soon as any batch returns data, setLoading to false
+                const results = await Promise.allSettled(fetchPromises);
+                const allResults = results
+                    .filter(result => result.status === 'fulfilled')
+                    .map(result => result.value)
+                    .flat();
+
+                // If any data is returned, set loading to false to allow interaction
+                if (allResults.length > 0) {
+                    setLoading(false);
+                }
+
+                return allResults;
+            } catch (error) {
+                console.error("Error fetching items in batches", error);
+                return [];
+            }
+        };
         const fetchData = async () => {
             try {
                 // Hàm async 0: Lấy count của delivery
-                const fetchGoodsReceiptPODoc = async () => {
-                    const res = await fetch(`/api/purchase/get-goods-receipt-po?id=${query?.id}`, {
+                const fetchDeliveryDocQuanty = async () => {
+                    const res = await fetch('/api/sales/get-delivery-count', {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
@@ -323,151 +391,91 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                     });
                     const dataResult = await res.json();
 
-                    console.log("GRPO: ", dataResult);
-
-                    if (!dataResult.message) {
-                        setDocNum(dataResult.DocNum);
-                        console.log("Bị qq gì an cute 1: ", currencies)
-                        console.log("Bị qq gì an cute: ", generalInfo?.DocCurrency)
-                        setGeneralInfo(prev => ({
-                            DocNum: dataResult.DocNum,
-                            DocNumType: dataResult.DocNum == dataResult.DocEntry ? "Primary" : "Manual",
-                            DocCurrency: dataResult.DocCurrency,
-                            NumAtCard: dataResult.NumAtCard,
-                            ContactPersonCode: dataResult.ContactPersonCode,
-                            SalesPersonCode: dataResult.SalesPersonCode,
-                            PostingDate: new Date(dataResult.DocDate),
-                            DeliveryDate: new Date(dataResult.DocDueDate),
-                            DocumentDate: new Date(dataResult.TaxDate),
-                            Rounding: dataResult.Rounding == "tYES",
-                            RoundingAmount: dataResult.RoundingDiffAmountFC || dataResult.RoundingDiffAmount,
-                            Remark: dataResult.Comments,
-                            JournalRemark: dataResult.JournalMemo,
-                            DiscountPercent: dataResult.DiscountPercent,
-                            DiscountAmount: dataResult.TotalDiscountFC || dataResult.TotalDiscount,
-                            TotalAmount: dataResult.DocTotalFc || dataResult.DocTotal,
-                            TaxAmount: dataResult.VatSumFc || dataResult.VatSum,
-                            CardCode: dataResult.CardCode,
-                            CardName: dataResult.CardName,
-                            DocumentStatus: dataResult.DocumentStatus,
-                            ContactPersonCode: dataResult.ContactPersonCode,
-                            PaymentGroupCode: dataResult.PaymentGroupCode,
-                            CashDiscountDateOffset: generalInfo.CashDiscountDateOffset,
-                            CreateQRCodeFrom: generalInfo.CreateQRCodeFrom,
-                            FederalTaxID: generalInfo.FederalTaxID,
-                            ImportFileNum: generalInfo.ImportFileNum,
-                        }));
-                        setSelectedContactPerson(contactPersonListOptions.find(person => person.code == dataResult.ContactPersonCode))
-                        setSelectedSalesEmployee(salesEmployeeListOptions.find(employee => employee.code == dataResult.SalesPersonCode))
-                        setSelectedDocType(documentTypeOptions.find(el => el.code == dataResult.DocType));
-                        setSelectedPaymentTerm(paymentTermOptions.find(pt => pt.code == dataResult.PaymentGroupCode))
-                        if (dataResult?.DocCurrency !== companyInfo?.LocalCurrency)
-                            setSelectedCurrency({ name: 'BP Currency', code: 'bpCurrency', value: {Code: dataResult?.DocCurrency} });
-                        setContentData(dataResult?.DocumentLines.map(el => {
-                            return {
-                                id: nanoid(6),
-                                ItemCode: el.ItemCode,
-                                ItemDescription: el.ItemDescription,
-                                Quantity: el.Quantity,
-                                UnitPrice: el.UnitPriceFC || el.UnitPrice,
-                                Rate: el.Rate,
-                                Currency: el.Currency,
-                                AccountCode: el.AccountCode,
-                                BaseType: el.BaseType,
-                                BaseEntry: el.BaseEntry,
-                                BaseLine: el.BaseLine,
-                                ManageSerialNumbers: el.SerialNumbers.length > 0,
-                                SerialNumbers: el.SerialNumbers,
-                                ManageBatchNumbers: el.BatchNumbers.length > 0,
-                                BatchNumbers: el.BatchNumbers,
-                                DocEntry: el.DocEntry,
-                                DiscountPercent: el.DiscountPercent,
-                                Warehouse: el.WarehouseCode,
-                                GrossTotal: el.PriceAfterVAT,
-                                TaxCode: el.VatGroup,
-                                TaxRate: el.TaxPercentagePerRow,
-                                TaxAmount: el.NetTaxAmountFC || el.NetTaxAmount,
-                                Total: el.RowTotalFC || el.LineTotal,
-                                UoMName: el.MeasureUnit,
-                                AttachmentEntry: el.AttachmentEntry
-                            }
-                        }))
-
-                        if (dataResult.AttachmentEntry) {
-                            const attachmentRes = await fetch(`/api/attachment/get-attachment-doc?id=${dataResult.AttachmentEntry}`, {
-                                method: 'GET',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                credentials: 'include'
-                            });
-
-                            const attachmentDoc = await attachmentRes.json();
-                            const attachmentLines = attachmentDoc.Attachments2_Lines;
-
-                            if (attachmentLines.length > 0) {
-                                const files = await Promise.all(
-                                    attachmentLines.map(async (line) => {
-                                        const { FileName: fileName, FileExtension: fileExtension, AttachmentDate: fileDate } = line;
-                                        const lastModified = new Date(fileDate).getTime();
-
-                                        const attachmentFileRes = await fetch(`/api/attachment/download-attachment-file`, {
-                                            method: 'POST',
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                            },
-                                            body: JSON.stringify({
-                                                fileName,
-                                                fileExtension,
-                                                attachmentEntry: dataResult.AttachmentEntry
-                                            }),
-                                            credentials: 'include'
-                                        });
-
-                                        if (!attachmentFileRes.ok) {
-                                            throw new Error(`HTTP error! status: ${attachmentFileRes.status}`);
-                                        }
-
-                                        const blob = await attachmentFileRes.blob();
-                                        return new File([blob], `${fileName}.${fileExtension}`, { type: blob.type, lastModified });
-                                    })
-                                );
-
-                                console.log("Files to upload: ", files);
-                                fileUploadRef.current.setFiles(files);
-                            }
-                        }
-                    } else {
-                        router.push('/notfound');
-                    }
+                    // const dataResult = await purchaseApi.getDeliveryDocQuantity();
+                    console.log("Ra gì: ", dataResult);
+                    const currentDocNum = dataResult?.data ? Number(dataResult?.data) + 1 : dataResult ? Number(dataResult) + 1 : "Undefined";
+                    setDocNum(currentDocNum);
+                    setGeneralInfo(prev => ({ ...prev, DocNum: currentDocNum }));
                 };
 
-                // const fetchGoodsReceiptPODocQuanty = async () => {
-                //     const res = await fetch('/api/purchase/get-goods-receipt-po-count', {
-                //         method: 'GET',
-                //         headers: {
-                //             'Content-Type': 'application/json',
-                //         },
-                //         credentials: 'include'
-                //     });
-                //     const dataResult = await res.json();
+                // Hàm async 1: Trường hợp link duplicate
+                const fetchCurrentDelivery = async () => {
+                    if (query?.docEntry && query?.base) {
+                        // Fetch the initial item count
+                        const countRes = await fetch('/api/inventory/get-item-count', {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include',
+                        });
 
-                //     // const dataResult = await purchaseApi.getGoodsReceiptPODocQuantity();
-                //     console.log("Ra gì: ", dataResult);
-                //     const currentDocNum = dataResult?.data ? Number(dataResult?.data) + 1 : dataResult ? Number(dataResult) + 1 : "Undefined";
-                //     setDocNum(currentDocNum);
-                //     setGeneralInfo(prev => ({ ...prev, DocNum: currentDocNum }));
-                // };
-                // Hàm async 1: Lấy danh sách supplier
-                // const fetchSupplier = async () => {
+                        const countData = await countRes.json();
+                        // const fetchedItemCount = countData.count;
+                        // setItemCount(fetchedItemCount);
+                        console.log("Khùm hẻn: ", countData);
+                        console.log("Khùm hẻn 2: ", itemList);
+
+                        if (itemList?.length < 1) {
+                            // Case when item list is initially empty
+                            if (countData > 1000) {
+                                const combinedResults = await fetchAllItemsInBatches(countData);
+                                setItemList(combinedResults);
+                                setDataList(combinedResults);
+                            } else {
+                                const items = await fetchItems(countData);
+                                console.log("List of items: ", items)
+                                setItemList(items);
+                            }
+                        } else if (itemList?.length > 1 && itemList?.length !== countData) {
+                            // Case when item list is not empty but length doesn't match count
+                            if (countData > 1000) {
+                                const combinedResults = await fetchAllItemsInBatches(countData);
+                                setItemList(combinedResults);
+                            } else {
+                                const items = await fetchItems(countData);
+                                setItemList(items);
+                            }
+                        }
+
+                        const { docEntry, base } = query;
+
+                        const res = await fetch(`/api/purchase/get-delivery?id=${docEntry}`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include'
+                        });
+                        const dataResult = await res.json();
+                        setCopyDocument(dataResult);
+                    }
+                    // const res = await fetch(`/api/purchase/get-delivery/`, {
+                    //     method: 'GET',
+                    //     headers: {
+                    //         'Content-Type': 'application/json',
+                    //     },
+                    //     credentials: 'include'
+                    // });
+                    // const dataResult = await res.json();
+
+                    // // const dataResult = await purchaseApi.getDeliveryDocQuantity();
+                    // console.log("Ra gì: ", dataResult);
+                    // const currentDocNum = dataResult?.data ? Number(dataResult?.data) + 1 : dataResult ? Number(dataResult) + 1 : "Undefined";
+                    // setDocNum(currentDocNum);
+                    // setGeneralInfo(prev => ({ ...prev, DocNum: currentDocNum }));
+                };
+
+                // Hàm async 1: Lấy danh sách customer
+                // const fetchCustomer = async () => {
                 //     const queryProps = {
-                //         filter: ["CardType eq 'cSupplier'"]
+                //         filter: ["CardType eq 'cCustomer'"]
                 //     };
                 //     const dataResult = await partnersApi.getAllPartners(queryProps);
-                //     setSupplierList(dataResult.value);
-                //     setSupplierListOptions(dataResult.value?.map(val => ({ name: val.CardName, code: val.CardCode })))
+                //     setCustomerList(dataResult.value);
+                //     setCustomerListOptions(dataResult.value?.map(val => ({ name: val.CardName, code: val.CardCode })))
 
-                //     console.log("Supplier nè: ", dataResult.value);
+                //     console.log("Customer nè: ", dataResult.value);
                 // };
 
                 // Hàm async 2: Lấy danh sách các item
@@ -607,16 +615,16 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 };
 
                 await Promise.all([
-                    fetchPaymentTerm(),
-                    fetchWarehouses(),
-                    fetchGoodsReceiptPODoc(),
-                    // fetchGoodsReceiptPODocQuanty(),
-                    // fetchSupplier(),
+                    fetchDeliveryDocQuanty(),
+                    fetchCurrentDelivery(),
+                    // fetchCustomer(),
                     // fetchItems(),
+                    fetchWarehouses(),
                     // fetchSalesEmployee(),
                     // fetchEmployee(),
                     // fetchAdditionalExpenses(),
                     // fetchVatGroups(),
+                    fetchPaymentTerm()
                 ]);
 
             } catch (error) {
@@ -635,42 +643,103 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     }, []);
 
     useEffect(() => {
+        if (copyDocument) {
+            let newContentData = [];
+            let newFreightRows = [];
+
+            const copyLines = copyDocument.DocumentLines;
+            const freightLines = copyDocument.DocumentAdditionalExpenses;
+
+            if (copyLines.length > 0) {
+                newContentData = copyLines.map(({ LineNum, DocEntry, Status, WarehouseCode, ...rest }) => {
+                    const currentItem = itemList.find(item => item.ItemCode == rest.ItemCode);
+                    return {
+                        id: nanoid(6),
+                        Item: currentItem,
+                        // BaseDocType: DocumentType,
+                        // BaseDocLine: LineNum,
+                        // BaseDocEntry: DocEntry,
+                        // BaseDocumentReferenceL: DocEntry,
+                        ManageBatchNumbers: currentItem.ManageBatchNumbers === 'tYes',
+                        ManageByQuantity: currentItem.ManageByQuantity == 'tYes',
+                        ManageSerialNumbers: currentItem.ManageSerialNumbers == 'tYes',
+                        TaxCode: rest.VatGroup,
+                        TaxRate: vatGroups.find(v => v.Code == rest.VatGroup)?.VatGroups_Lines[0]?.Rate || 0,
+                        TaxAmount: rest.NetTaxAmount,
+                        Total: rest.LineTotal,
+                        GrossTota: rest.GrossTotal,
+                        Warehouse: warehouseOptions.find(w => w.code == WarehouseCode),
+                        ...rest
+                    };
+                });
+            }
+
+            if (freightLines.length > 0) {
+                newFreightRows = freightLines.map(({ LineNum, DocEntry, LineStatus, BaseOpenQuantity, ...rest }) => {
+                    return {
+                        id: nanoid(6),
+                        // BaseDocType: DocumentType,
+                        // BaseDocLine: LineNum,
+                        // BaseDocEntry: DocEntry,
+                        ...rest
+                    };
+                });
+            }
+
+            if (newContentData.length > 0) {
+                const lastItem = contentData[contentData.length - 1];
+                setContentData([...newContentData, lastItem]);
+            }
+
+            if (newFreightRows.length) {
+                const lastItem = generalInfo.FreightCharges[generalInfo.FreightCharges.length - 1];
+                setGeneralInfo(prev => ({
+                    ...prev,
+                    FreightCharges: [...newFreightRows, lastItem]
+                }));
+            }
+
+        }
+    }, [copyDocument])
+
+    useEffect(() => {
+        console.log("Quá là mệt mỏi thiệt lun á chài: ", contentData)
         summarizeTotal();
     }, [contentData, generalInfo?.RoundingAmount, generalInfo?.DiscountPercent]);
 
     useEffect(() => {
         const handleWindowClose = (e) => {
-            // if (contentData.length > 1) {
-            //     const confirmationMessage = tM("unsave");
-            //     e.returnValue = confirmationMessage; 
-            //     return confirmationMessage;
-            // }
+            if (contentData.length > 1) {
+                const confirmationMessage = tM("unsave");
+                e.returnValue = confirmationMessage; // Standard for most browsers
+                return confirmationMessage; // For some browsers
+            }
         };
 
         const handleRouteChange = (url) => {
-            // console.log("Sao nó khum có vị 2: ", contentData);
-            // if (contentData.length > 1 && !confirm(tM("unsave"))) {
-            //     router.events.emit('routeChangeError');
-            //     throw 'Abort route change. Please ignore this error.';
-            // }
+            console.log("Sao nó khum có vị 2: ", contentData);
+            if (contentData.length > 1 && !confirm(tM("unsave"))) {
+                router.events.emit('routeChangeError');
+                throw 'Abort route change. Please ignore this error.';
+            }
         };
 
-        // window.addEventListener('beforeunload', handleWindowClose);
-        // router.events.on('routeChangeStart', handleRouteChange);
+        window.addEventListener('beforeunload', handleWindowClose);
+        router.events.on('routeChangeStart', handleRouteChange);
 
-        // return () => {
-        //     window.removeEventListener('beforeunload', handleWindowClose);
-        //     router.events.off('routeChangeStart', handleRouteChange);
-        // };
+        return () => {
+            window.removeEventListener('beforeunload', handleWindowClose);
+            router.events.off('routeChangeStart', handleRouteChange);
+        };
     }, [contentData]);
 
     const summarizeTotal = () => {
         const prices = {
             priceBeforeDiscount: 0,
-            // discountAmount: 0,
-            // priceBeforeTax: 0,
-            // taxAmount: 0,
-            // totalPrice: 0
+            discountAmount: 0,
+            priceBeforeTax: 0,
+            taxAmount: 0,
+            totalPrice: 0
         }
         prices.priceBeforeDiscount = Number(contentData.reduce((acc, item) => {
             // Kiểm tra và cộng chỉ khi Total có giá trị
@@ -681,49 +750,51 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             return acc;
         }, 0));
 
-        // if (generalInfo.DiscountPercent) {
-        //     prices.discountAmount = prices.priceBeforeDiscount * generalInfo.DiscountPercent / 100;
-        // }
+        if (generalInfo.DiscountPercent) {
+            prices.discountAmount = prices.priceBeforeDiscount * generalInfo.DiscountPercent / 100;
+        }
 
-        // prices.priceBeforeTax = prices.priceBeforeDiscount + prices.discountAmount;
+        prices.priceBeforeTax = prices.priceBeforeDiscount + prices.discountAmount;
 
-        // const supplierTaxCode = generalInfo.TaxCode;
+        const customerTaxCode = generalInfo.TaxCode;
 
-        // if (supplierTaxCode) {
-        //     const supplierTax = vatGroups.find(s => s.Code == supplierTaxCode);
-        //     if (supplierTax) {
-        //         prices.taxAmount = supplierTax.Rate * prices.priceBeforeTax / 100;
+        // if (customerTaxCode) {
+        //     const customerTax = vatGroups.find(s => s.Code == customerTaxCode);
+        //     if (customerTax) {
+        //         prices.taxAmount = customerTax.Rate * prices.priceBeforeTax / 100;
         //     }
         // }
 
-        // prices.totalPrice = prices.priceBeforeTax + prices.taxAmount
+        prices.totalPrice = prices.priceBeforeTax + prices.taxAmount
 
-        // if (generalInfo.Rounding) {
-        //     prices.totalPrice += generalInfo.RoundingAmount
-        // }
+        if (generalInfo.Rounding) {
+            prices.totalPrice += generalInfo.RoundingAmount
+        }
 
-        // if (generalInfo.FreightAmount) {
-        //     prices.totalPrice += generalInfo.FreightAmount;
-        // }
+        if (generalInfo.FreightAmount) {
+            prices.totalPrice += generalInfo.FreightAmount;
+        }
 
+        console.log("Quài luôn đó má:", contentData)
+        // console.log("Freight nữa:", generalInfo.FreightAmount)
 
         // console.log("Summarize: ", prices);
 
         setGeneralInfo(prev => ({
             ...prev, TotalBeforeDiscount: prices.priceBeforeDiscount,
-            // DiscountAmount: prices.discountAmount,
-            // TaxAmount: prices.taxAmount,
-            // TotalAmount: prices.totalPrice
+            DiscountAmount: prices.discountAmount,
+            TaxAmount: prices.taxAmount,
+            TotalAmount: prices.totalPrice
         }))
     }
 
-    const SupplierDropdownItemTemplate = (option, props) => {
+    const CustomerDropdownItemTemplate = (option, props) => {
         return (
             <>{option?.code + ' - ' + option?.name}</>
         );
     }
 
-    const SupplierDropdownValueTemplate = (option, props) => {
+    const CustomerDropdownValueTemplate = (option, props) => {
         if (option) {
             return (
                 <>{option?.code}</>
@@ -737,7 +808,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             <div className="p-2">
                 <p className={`truncate`}>{product?.ItemCode}</p>
             </div>
-            <Button icon="pi pi-list" disabled onClick={() => { setSelectedItemRow({ ...product, rowIndex: row.rowIndex }); setItemSelectModalOpen(true) }} />
+            <Button icon="pi pi-list" onClick={() => { setSelectedItemRow({ ...product, rowIndex: row.rowIndex }); setItemSelectModalOpen(true) }} />
         </div>;
     };
 
@@ -768,7 +839,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 handleAddNewContentRow();
             }
         }
-        return <InputText disabled className="w-full p-inputtext-sm" value={product?.ItemDescription} onChange={handleEditItemDescription} />;
+        return <InputText className="w-full p-inputtext-sm" value={product?.ItemDescription} onChange={handleEditItemDescription} />;
     };
 
     const ItemQuantityTemplate = (product) => {
@@ -793,7 +864,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             }
 
         }
-        return <InputNumber disabled inputId="integeronly" className="w-full text-right p-inputtext-sm" min={1} showButtons value={product?.Quantity} onValueChange={handleEditItemQuantity} />
+        return <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" min={1} showButtons value={product?.Quantity} onValueChange={handleEditItemQuantity} />
     };
 
     const ItemDiscountPercentTemplate = (product) => {
@@ -808,13 +879,13 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 } else return content
             })));
         }
-        return <InputNumber disabled minFractionDigits={2} className="w-full text-right p-inputtext-sm" suffix=" %" value={product?.DiscountPercent} onBlur={handleEditItemDiscountPercent}
+        return <InputNumber minFractionDigits={2} className="w-full text-right p-inputtext-sm" suffix=" %" value={product?.DiscountPercent} onBlur={handleEditItemDiscountPercent}
         // onValueChange={handleEditItemDiscountPercent} 
         />
     };
 
     const RowNumberTemplate = (product, row) => {
-        return <>&nbsp;{row.rowIndex && (Number(row.rowIndex) + 1 || "1")}</>;
+        return <>&nbsp;{(Number(row.rowIndex) + 1) || "1"}</>;
     }
 
     const ItemRateTemplate = (product) => {
@@ -827,22 +898,22 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             <div className="p-2 ">
                 <p className={`truncate`}>{product?.TaxCode}</p>
             </div>
-            <Button disabled icon="pi pi-list" onClick={() => { setSelectedItemRow({ ...product, rowIndex: row.rowIndex }); setTaxCodeSelectModalOpen(true) }} />
+            <Button icon="pi pi-list" onClick={() => { setSelectedItemRow({ ...product, rowIndex: row.rowIndex }); setTaxCodeSelectModalOpen(true) }} />
         </div>;
     }
 
     const ItemTaxRateTemplate = (product) => {
-        return <div className="w-full p-inputtext p-inputtext-sm p-component block align-baseline"><span className="h-[21px]">&nbsp;{product.TaxRate && (product.TaxRate + '%')}</span></div>
+        return <div className="w-full p-inputtext p-inputtext-sm p-component p-inline-message p-inline-message-info block align-baseline"><span className="h-[21px]">&nbsp;{product.TaxRate && (product.TaxRate + '%')}</span></div>
             ;
     }
 
     const ItemTaxAmountTemplate = (product) => {
-        return <div className="w-full p-inputtext p-inputtext-sm p-component block align-baseline min-h-[33.47px]"><span className="h-[21px]">&nbsp;{product.TaxAmount && (formatNumberWithComma(product.TaxAmount) + ' ' + (generalInfo?.DocCurrency instanceof Object == true ? generalInfo?.DocCurrency?.Code : generalInfo?.DocCurrency))}</span></div>
+        return <div className="w-full p-inputtext p-inputtext-sm p-component p-inline-message p-inline-message-info block align-baseline min-h-[33.47px]"><span className="h-[21px]">&nbsp;{product.TaxAmount && (formatNumberWithComma(product.TaxAmount) + ' ' + generalInfo?.DocCurrency?.Code)}</span></div>
             ;
     }
 
     const ItemGrossTotalTemplate = (product) => {
-        return <div className="w-full p-inputtext p-inputtext-sm p-component block align-baseline min-h-[33.47px]"><span className="h-[21px]">&nbsp;{product.GrossTotal && (formatNumberWithComma(product.GrossTotal) + ' ' + (generalInfo?.DocCurrency instanceof Object == true ? generalInfo?.DocCurrency?.Code : generalInfo?.DocCurrency))}</span></div>
+        return <div className="w-full p-inputtext p-inputtext-sm p-component p-inline-message p-inline-message-info block align-baseline min-h-[33.47px]"><span className="h-[21px]">&nbsp;{product.GrossTotal && (formatNumberWithComma(product.GrossTotal) + ' ' + generalInfo?.DocCurrency?.Code)}</span></div>
             ;
     }
 
@@ -858,7 +929,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 else return content
             })));
         }
-        return <InputNumber disabled inputId="integeronly" className="w-full text-right p-inputtext-sm" min={0} suffix={` ${product?.Currency}`} value={product?.UnitPrice} onValueChange={handleEditItemUnitPrice} />
+        return <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" min={0} suffix={` ${product?.Currency}`} value={product?.UnitPrice} onValueChange={handleEditItemUnitPrice} />
     };
 
     // const ItemPriceAfterDiscountTemplate = (product) => {
@@ -902,7 +973,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                     if (discountPercent < 0 || discountPercent > 100) {
                         console.log("Discount percent: ", discountPercent);
                         console.log("Event nè: ", e.target);
-                        toast("Vui lòng kiểm tra lại giá trị nhập.")
+                        toast(tM("checkInput"))
                         // Keep the input focused and data unchanged
                         return { ...content };
                     } else {
@@ -927,7 +998,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 handleAddNewContentRow();
             }
         };
-        return <InputNumber disabled inputId="integeronly" className="w-full text-right p-inputtext-sm" min={0} suffix={` ${product?.Currency ?? ''}`} value={product?.Total} onValueChange={handleEditItemTotal} />
+        return <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" min={0} suffix={` ${product?.Currency ?? ''}`} value={product?.Total} onValueChange={handleEditItemTotal} />
     };
 
     const ItemWarehouseTemplate = (product) => {
@@ -942,13 +1013,12 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             <>
                 <Dropdown
                     filter
-                    value={warehouseOptions.find(wh => wh.code == product.Warehouse)} 
+                    value={product?.Warehouse}
                     options={warehouseOptions}
                     onChange={handleEditItemWarehouse}
                     optionLabel="name"
-                    placeholder="Select a warehouse"
+                    placeholder={t("selectWarehouse")}
                     className="p-inputtext-sm w-full"
-                    disabled
                 />
             </>
 
@@ -960,14 +1030,14 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
         // console.log("Test 1: ", ManageBatchNumbers);
         // console.log("Test 2: ", ManageSerialNumbers);
         // console.log("Test 3: ", ManageByQuantity);
-        // console.log("Khùm đin: ", no)
 
         const isDisabled = ManageByQuantity || (!ManageByQuantity && !ManageBatchNumbers && !ManageSerialNumbers);
         // console.log("Test 4: ", isDisabled);
 
         const handleChangeSelections = (e) => {
-            console.log(e.value);
+            console.log("Change batch, serial 1: ", e.value);
             const newCodes = e.value.map(val => val.code);
+            console.log("Change batch, serial 2: ", newCodes);
 
             if (ManageBatchNumbers) {
                 const newArray = contentData.map((item, idx) => {
@@ -981,21 +1051,22 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             if (ManageSerialNumbers) {
                 const newArray = contentData.map((item, idx) => {
                     if (idx == row.rowIndex) {
-                        return { ...item, SerialNumbers: item.SerialNumbers.filter(b => newCodes.includes(b.InternalSerialNumber)) }
+                        return { ...item, SerialNumbers: item.SerialNumbers.filter(b => newCodes.includes(b.IntrSerial)) }
                     } else return item
                 });
                 setContentData(newArray)
             }
         }
 
-        const currentOptions = ManageBatchNumbers ? contentData[row.rowIndex]?.BatchNumbers?.map(batch => ({ name: `${batch.BatchNumber} (${formatNumberWithComma(batch.Quantity)})`, code: batch.BatchNumber })) : contentData[row.rowIndex]?.SerialNumbers?.map(serial => ({ name: serial.InternalSerialNumber, code: serial.InternalSerialNumber }))
+        const currentOptions = ManageBatchNumbers ? contentData[row.rowIndex]?.BatchNumbers?.map(batch => ({ name: `${batch.BatchNumber} (${formatNumberWithComma(batch.Quantity)})`, code: batch.BatchNumber })) : contentData[row.rowIndex]?.SerialNumbers?.map(serial => ({ name: serial.IntrSerial, code: serial.IntrSerial }))
+
         return (
             <div className="p-inputtext p-inputtext-sm p-component w-full p-0 flex justify-between items-center border-r-0">
                 <MultiSelect
                     value={currentOptions}
                     onChange={handleChangeSelections}
                     options={currentOptions}
-                    disabled
+                    disabled={isDisabled}
                     optionLabel="name"
                     display="chip"
                     placeholder=""
@@ -1039,9 +1110,8 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                     options={gradeOptions}
                     onChange={handleEditItemGrade}
                     optionLabel="name"
-                    placeholder="Select a grade"
+                    placeholder={t("selectGrade")}
                     className="p-inputtext-sm w-full"
-                    disabled
                 />
             </>
         );
@@ -1062,9 +1132,8 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                     options={systemOptions}
                     onChange={handleEditItemSystem}
                     optionLabel="name"
-                    placeholder="Select a system"
+                    placeholder={t("selectSystem")}
                     className="p-inputtext-sm w-full"
-                    disabled
                 />
             </>
 
@@ -1079,7 +1148,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 } else return content;
             })));
         }
-        return <InputNumber disabled inputId="integeronly" className="w-full text-right p-inputtext-sm" min={1} showButtons value={product?.U_ActualDays} onValueChange={handleEditActualDays} />
+        return <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" min={1} showButtons value={product?.U_ActualDays} onValueChange={handleEditActualDays} />
     };
 
     const ItemStandardDaysTemplate = (product) => {
@@ -1090,7 +1159,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 } else return content;
             })));
         }
-        return <InputNumber disabled inputId="integeronly" className="w-full text-right p-inputtext-sm" min={1} showButtons value={product?.U_StandardDays} onValueChange={handleEditStandardDays} />
+        return <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" min={1} showButtons value={product?.U_StandardDays} onValueChange={handleEditStandardDays} />
     };
 
     const UoMNameTemplate = (product) => {
@@ -1101,7 +1170,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 } else return content;
             })));
         }
-        return <InputText disabled inlinestyle={{ textAlign: 'right' }} className="w-full p-inputtext-sm" value={product?.UoMName} onChange={handleEditUoMName} />;
+        return <InputText inlinestyle={{ textAlign: 'right' }} className="w-full p-inputtext-sm" value={product?.UoMName} onChange={handleEditUoMName} />;
     };
 
     const ItemRemarkTemplate = (product) => {
@@ -1114,7 +1183,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
         }
         return (
             <div className="flex items-center">
-                <InputTextarea disabled className="w-full p-inputtext-sm" value={product?.U_Remark} onChange={handleEditItemRemark} autoResize rows={1} />
+                <InputTextarea className="w-full p-inputtext-sm" value={product?.U_Remark} onChange={handleEditItemRemark} autoResize rows={1} />
             </div>
 
         );
@@ -1130,7 +1199,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
         }
         return (
             <div className="flex items-center">
-                <InputTextarea disabled className="w-full p-inputtext-sm" value={product?.U_Detail} onChange={handleEditItemDetail} autoResize={true} rows={1} />
+                <InputTextarea className="w-full p-inputtext-sm" value={product?.U_Detail} onChange={handleEditItemDetail} autoResize={true} rows={1} />
             </div>
 
         );
@@ -1144,7 +1213,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 } else return content;
             })));
         }
-        return <InputText disabled inputstyle={{ textAlign: 'right' }} className="w-full p-inputtext-sm" value={product?.U_APInvoiceNo} onChange={handleEditAPInvoiceENo} />;
+        return <InputText inputstyle={{ textAlign: 'right' }} className="w-full p-inputtext-sm" value={product?.U_APInvoiceNo} onChange={handleEditAPInvoiceENo} />;
     };
 
     const FreightNameTemplate = (item, row) => {
@@ -1191,7 +1260,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                             onChange={handleEditFreight}
                             optionLabel="Name"
                             dataKey="ExpenseCode"
-                            placeholder="Select an expense"
+                            placeholder={t("selectExpense")}
                             className="p-inputtext-sm w-full"
                         />
                     ) : (
@@ -1291,8 +1360,8 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     const addressModalFooter = () => {
         return (
             <div>
-                <Button label="Cancel" icon="pi pi-times" onClick={() => setWhichEditAddressModalOpen(null)} className="p-button-text" />
-                <Button label="Yes" icon="pi pi-check" onClick={handleConfirmAddressModal} autoFocus />
+                <Button label={tG("cancel")}  icon="pi pi-times" onClick={() => setWhichEditAddressModalOpen(null)} className="p-button-text" />
+                <Button label={tG("yes")} icon="pi pi-check" onClick={handleConfirmAddressModal} autoFocus />
             </div>
         )
     };
@@ -1307,163 +1376,149 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 body: RowNumberTemplate
             },
             {
-                header: 'Item No.',
+                header: capitalizeWords(t("itemNo")),
                 field: 'ItemNo',
                 className: 'text-center',
                 minWidth: '12rem',
                 body: ItemNoTemplate
             },
             {
-                header: 'Item Description',
+                header: capitalizeWords(t("itemDescription")),
                 field: 'ItemDescription',
                 className: 'text-center',
                 minWidth: '12rem',
                 body: ItemDescriptionTemplate
             },
             {
-                header: 'Quantity',
+                header: capitalizeWords(t("quantity")),
                 field: 'Quantity',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemQuantityTemplate
             },
             {
-                header: 'Unit Price',
+                header: capitalizeWords(t("unitPrice")),
                 field: 'UnitPrice',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemUnitPriceTemplate
             },
             {
-                header: 'Discount %',
+                header: capitalizeWords(t("discountPercent")),
                 field: 'DiscountPercent',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemDiscountPercentTemplate
             },
             {
-                header: 'Rate',
+                header: capitalizeWords(t("rate")),
                 field: 'Rate',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemRateTemplate
             },
             {
-                header: 'Total After Discount',
+                header: capitalizeWords(t("totalAfterDiscount")),
                 field: 'Total',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTotalTemplate
             },
             {
-                header: 'Tax Code',
+                header: capitalizeWords(t("taxCode")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxCodeTemplate
             },
             {
-                header: 'Tax Rate',
+                header: capitalizeWords(t("taxRate")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxRateTemplate
             },
             {
-                header: 'Tax Amount',
+                header: capitalizeWords(t("taxAmount")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxAmountTemplate
             },
             {
-                header: 'Gross Total After Discount',
+                header: capitalizeWords(t("grossTotalAfterDiscount")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGrossTotalTemplate
             },
             {
-                header: 'Warehouse',
+                header: capitalizeWords(t("warehouse")),
                 field: 'Warehouse',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemWarehouseTemplate
             },
             {
-                header: 'Batch/Serial Number',
+                header: capitalizeWords(t("batchSerialNumber")),
                 className: 'text-left',
                 minWidth: '14rem',
                 body: ItemBatchSerialTemplate
             },
             {
-                header: 'UoM Name',
+                header: capitalizeWords(t("uomName")),
                 field: 'UoMName',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: UoMNameTemplate
             },
-            // {
-            //     header: 'Description VN',
-            //     field: 'U_DescriptionVi',
-            //     className: 'text-right',
-            //     minWidth: '14rem',
-            //     body: (product) => BodyDescriptionTemplate(product, 'vi')
-            // },
-            // {
-            //     header: 'Description EN',
-            //     field: 'U_DescriptionEn',
-            //     className: 'text-right',
-            //     minWidth: '14rem',
-            //     body: (product) => BodyDescriptionTemplate(product, 'en')
-            // },
             {
-                header: 'System',
+                header: capitalizeWords(t("system")),
                 field: 'U_System',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemSystemTemplate
             },
             {
-                header: 'Actual Days',
+                header: capitalizeWords(t("actualDays")),
                 field: 'U_ActualDays',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemActualDaysTemplate
             },
             {
-                header: 'Standard Days',
+                header: capitalizeWords(t("standardDays")),
                 field: 'U_StandardDays',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemStandardDaysTemplate
             },
             {
-                header: 'Grade',
+                header: capitalizeWords(t("grade")),
                 field: 'U_Grade',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGradeTemplate
             },
             {
-                header: 'Remark',
+                header: capitalizeWords(t("remark")),
                 field: 'U_Remark',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemRemarkTemplate
             },
             {
-                header: 'Item/Service Detail',
+                header: capitalizeWords(t("itemServiceDetail")),
                 field: 'U_Detail',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemDetailTemplate
             },
             {
-                header: 'APInvoice eNo.',
+                header: capitalizeWords(t("apInvoiceENo")),
                 field: 'U_APInvoiceNo',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: APInvoiceENoTemplate
             },
         ],
-        [itemList, warehouseOptions, contentData]
+        [itemList, warehouseOptions, contentData, locale]
     );
 
     const serviceColumns = useMemo(
@@ -1476,157 +1531,136 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 body: RowNumberTemplate
             },
             {
-                header: 'Description',
+                header: capitalizeWords(t("description")),
                 field: 'ItemDescription',
                 className: 'text-center',
                 minWidth: '12rem',
                 body: ItemDescriptionTemplate
             },
             {
-                header: 'Quantity',
+                header: capitalizeWords(t("quantity")),
                 field: 'Quantity',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemQuantityTemplate
             },
             {
-                header: 'Unit Price',
+                header: capitalizeWords(t("unitPrice")),
                 field: 'UnitPrice',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemUnitPriceTemplate
             },
             {
-                header: 'Rate',
-                field: 'Rate',
-                className: 'text-right',
-                minWidth: '14rem',
-                body: ItemRateTemplate
-            },
-            {
-                header: 'G/L Account Code',
+                header: capitalizeWords(t("glAccountCode")),
                 field: 'GLAccount',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGLAccountCodeTemplate
             },
             {
-                header: 'G/L Account Name',
+                header: capitalizeWords(t("glAccountName")),
                 field: 'GLAccountName',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGLAccountNameTemplate
             },
             {
-                header: 'Discount %',
+                header: capitalizeWords(t("discountPercent")),
                 field: 'DiscountPercent',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemDiscountPercentTemplate
             },
             {
-                header: 'Total After Discount',
+                header: capitalizeWords(t("totalAfterDiscount")),
                 field: 'Total',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTotalTemplate
             },
             {
-                header: 'Tax Code',
+                header: capitalizeWords(t("taxCode")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxCodeTemplate
             },
             {
-                header: 'Tax Rate',
+                header: capitalizeWords(t("taxRate")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxRateTemplate
             },
             {
-                header: 'Tax Amount',
+                header: capitalizeWords(t("taxAmount")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxAmountTemplate
             },
             {
-                header: 'Gross Total After Discount',
+                header: capitalizeWords(t("grossTotalAfterDiscount")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGrossTotalTemplate
             },
             {
-                header: 'UoM Name',
+                header: capitalizeWords(t("uomName")),
                 field: 'UoMName',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: UoMNameTemplate
             },
-            // {
-            //     header: 'Description VN',
-            //     field: 'U_DescriptionVi',
-            //     className: 'text-right',
-            //     minWidth: '14rem',
-            //     body: (product) => BodyDescriptionTemplate(product, 'vi')
-            // },
-            // {
-            //     header: 'Description EN',
-            //     field: 'U_DescriptionEn',
-            //     className: 'text-right',
-            //     minWidth: '14rem',
-            //     body: (product) => BodyDescriptionTemplate(product, 'en')
-            // },
             {
-                header: 'System',
+                header: capitalizeWords(t("system")),
                 field: 'U_System',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemSystemTemplate
             },
             {
-                header: 'Actual Days',
+                header: capitalizeWords(t("actualDays")),
                 field: 'U_ActualDays',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemActualDaysTemplate
             },
             {
-                header: 'Standard Days',
+                header: capitalizeWords(t("standardDays")),
                 field: 'U_StandardDays',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemStandardDaysTemplate
             },
             {
-                header: 'Grade',
+                header: capitalizeWords(t("grade")),
                 field: 'U_Grade',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGradeTemplate
             },
             {
-                header: 'Remark',
+                header: capitalizeWords(t("remark")),
                 field: 'U_Remark',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemRemarkTemplate
             },
             {
-                header: 'Item/Service Detail',
+                header: capitalizeWords(t("itemServiceDetail")),
                 field: 'U_Detail',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemDetailTemplate
             },
             {
-                header: 'APInvoice eNo.',
+                header: capitalizeWords(t("apInvoiceENo")),
                 field: 'U_APInvoiceNo',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: APInvoiceENoTemplate
             },
         ],
-        [contentData]
+        [contentData, locale]
     );
 
     const freightChargesColumns = useMemo(
@@ -1639,60 +1673,60 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 body: RowNumberTemplate
             },
             {
-                header: 'Freight Name',
+                header: capitalizeWords(t("freightName")),
                 field: 'Name',
                 className: 'text-left',
                 minWidth: '12rem',
                 body: FreightNameTemplate
             },
             {
-                header: 'Remarks',
+                header: capitalizeWords(t("remark")),
                 field: 'Remarks',
                 className: 'text-left',
                 minWidth: '12rem',
                 body: FreightRemarkTemplate
             },
             {
-                header: 'Tax Code',
+                header: capitalizeWords(t("taxCode")),
                 field: 'TaxCode',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: FreightTaxCodeTemplate
             },
             {
-                header: 'Tax %',
+                header: capitalizeWords(t("taxRate")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: FreightTaxRateTemplate
             },
             {
-                header: 'Tax Amount',
+                header: capitalizeWords(t("taxAmount")),
                 field: 'TaxAmount',
                 className: 'text-right',
                 minWidth: '14rem'
             },
             {
-                header: 'Total Tax Amount',
+                header: capitalizeWords(t("totalTaxAmount")),
                 field: 'TotalTaxAmount',
                 className: 'text-right',
                 minWidth: '14rem'
             },
             {
-                header: 'Net Amount',
+                header: capitalizeWords(t("netAmount")),
                 field: 'NetAmount',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: FreightNetAmountTemplate
             },
             {
-                header: 'Gross Amount',
+                header: capitalizeWords(t("grossAmount")),
                 field: 'GrossAmount',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: FreightGrossAmountTemplate
             },
         ],
-        [freightChargeOptions, generalInfo]
+        [freightChargeOptions, generalInfo, locale]
     );
 
     const { width: containerWidth, height: containerHeight, ref: containerRef } = useResizeDetector();
@@ -1705,16 +1739,16 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
         }
     }
 
-    const handleChangeSelectedSupplier = (cardCode) => {
-        const selectedValue = supplierList.find(val => val.CardCode == cardCode)
-        console.log("Supplier: ", selectedValue);
-        setSelectedSupplier(selectedValue);
+    const handleChangeSelectedCustomer = (cardCode) => {
+        const selectedValue = customerList.find(val => val.CardCode == cardCode)
+        console.log("Customer: ", selectedValue);
+        setSelectedCustomer(selectedValue);
         // Contact person
         const currentContactPersonList = selectedValue?.ContactEmployees;
         const currentContactPersonName = selectedValue?.ContactPerson;
 
         // Check default currency xem có giống với local currency khum
-        const defaultCurrency = selectedValue.DefaultCurrency;
+        const defaultCurrency = selectedValue?.DefaultCurrency;
 
         if (defaultCurrency && defaultCurrency != companyInfo.LocalCurrency) {
             console.log("Lạ nhen: ", defaultCurrency);
@@ -1757,7 +1791,11 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             const currentContactPerson = currentContactPersonList.find(val => val.Name == currentContactPersonName);
             console.log("Selected contact person: ", currentContactPerson)
             setContactPersonList(currentContactPersonList);
-            setContactPersonListOptions(currentContactPersonList.map(item => ({ name: item.Name, code: item.InternalCode })))
+            setContactPersonListOptions(currentContactPersonList.map(item => {
+                const names = [item.FirstName, item.MiddleName, item.LastName];
+                const fullName = names.filter(name => name !== null && name !== undefined && name !== '').join(' ');
+                return { name: item.Name + ' - ' + fullName, code: item.InternalCode }
+            }))
             setSelectedContactPerson({ name: currentContactPerson.Name, code: currentContactPerson.InternalCode });
         }
 
@@ -1768,19 +1806,25 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
         // console.log("Lại bị gì nữa: ", selectedValue.BPPaymentMethods[0]);
 
         // Chỗ này phải lấy vat mặc định cho purchase
-        const supplierTaxCode = (selectedValue?.VatGroup) || (companyInfo.TaxGroupforPurchaseItem);
-        // const supplierTaxCode = selectedValue?.BPAddresses.find(i => i.AddressType == "bo_ShipTo");
-        let supplierTaxRate = 0;
+        const customerTaxCode = (selectedValue?.VatGroup) || (companyInfo.TaxGroupforPurchaseItem);
+        // const customerTaxCode = selectedValue?.BPAddresses.find(i => i.AddressType == "bo_ShipTo");
+        let customerTaxRate = 0;
 
-        if (supplierTaxCode) {
-            const supplierTax = vatGroups.find(s => s.Code == supplierTaxCode);
-            if (supplierTax) {
-                supplierTaxRate = supplierTax?.VatGroups_Lines[0]?.Rate
-                console.log("Test tax nha: ", supplierTaxRate)
+        if (customerTaxCode) {
+            const customerTax = vatGroups.find(s => s.Code == customerTaxCode);
+            if (customerTax) {
+                customerTaxRate = customerTax?.VatGroups_Lines[0]?.Rate
+                console.log("Test tax nha: ", customerTaxRate)
             }
         }
 
-        setGeneralInfo(prev => ({ ...prev, JournalRemark: 'Goods Receipt PO - ' + selectedValue.CardCode, TaxCode: supplierTaxCode, TaxRate: supplierTaxRate }));
+        setGeneralInfo(prev => ({
+            ...prev,
+            JournalRemark: 'Delivery - ' + selectedValue.CardCode,
+            TaxCode: customerTaxCode,
+            TaxRate: customerTaxRate,
+            FederalTaxID: selectedValue.FederalTaxID
+        }));
         setSelectedPaymentMethod(selectedValue.BPPaymentMethods[0] || null);
     }
 
@@ -2023,6 +2067,9 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             // Tạo mảng mới từ phần trước, mảng items (cập nhật với dữ liệu mới), và phần sau
             const updatedSlice = items.map((item, index) => {
                 const warehouseCode = item.DefaultWarehouse || item?.ItemWarehouseInfoCollection[0]?.WarehouseCode;
+                const vatCode = item.PurchaseVATGroup || generalInfo.TaxCode;
+                const vatRate = vatGroups.find(vat => vat.Code == vatCode)?.VatGroups_Lines[0]?.Rate || generalInfo.TaxRate;
+
 
                 return {
                     id: nanoid(6),
@@ -2040,11 +2087,11 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                     ManageSerialNumbers: item.ManageSerialNumbers === 'tYES',
                     BatchNumbers: [],
                     SerialNumbers: [],
-                    TaxCode: generalInfo.TaxCode,
-                    TaxRate: generalInfo.TaxRate,
-                    TaxAmount: generalInfo.TaxRate * item.ItemPrices[0]?.Price * 1 / 100,
+                    TaxCode: vatCode,
+                    TaxRate: vatRate,
+                    TaxAmount: vatRate * item.ItemPrices[0]?.Price * 1 / 100,
                     Total: item.ItemPrices[0]?.Price * 1,
-                    GrossTotal: (item.ItemPrices[0]?.Price * 1) + (generalInfo.TaxRate * item.ItemPrices[0]?.Price * 1 / 100),
+                    GrossTotal: (item.ItemPrices[0]?.Price * 1) + (vatRate * item.ItemPrices[0]?.Price * 1 / 100),
                     Warehouse: warehouseCode
                         ? warehouseOptions.find(warehouse => warehouse.code === warehouseCode)
                         : null,
@@ -2161,7 +2208,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 setContentData([...newContentData]);
             }
         }
-        toast.success("Deleted successfully!");
+        toast.success(tM("successfulDeleted"));
     }
 
     const handleCopyItems = () => {
@@ -2234,7 +2281,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                 }));
             }
         }
-        toast.success("Deleted successfully!");
+        toast.success(tM("successfulDeleted"));
     }
 
     const handleCopyFrom = (data) => {
@@ -2288,10 +2335,9 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                             return {
                                 id: nanoid(6),
                                 Item: currentItem,
-                                BaseDocType: DocumentType,
-                                BaseDocLine: LineNum,
-                                BaseDocEntry: DocEntry,
-                                BaseDocumentReferenceL: DocEntry,
+                                BaseType: DocumentType,
+                                BaseLine: LineNum,
+                                BaseEntry: DocEntry,
                                 ManageBatchNumbers: currentItem.ManageBatchNumbers === 'tYes',
                                 ManageByQuantity: currentItem.ManageByQuantity == 'tYes',
                                 ManageSerialNumbers: currentItem.ManageSerialNumbers == 'tYes',
@@ -2365,6 +2411,26 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
 
     }
 
+    const onChangeSelectAllColumn = () => {
+        if (whichColumnTableModalOpen) {
+            switch (whichColumnTableModalOpen) {
+                case "item":
+                    setVisibleItemColumns(contentColumns);
+
+                    break;
+                case "service":
+                    setVisibleServiceColumns(serviceColumns);
+                    break;
+                case "freight":
+                    setVisibleFreightColumns(freightChargesColumns);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+
     const onTableColumnToggle = (e) => {
         const selectedColumns = e.value;
         let orderedSelectedColumns;
@@ -2391,49 +2457,49 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
 
     const contentTHeader = (
         <div className="flex justify-between items-center">
-            <h5 className="mb-0">{selectedDocType?.code == 'dDocument_Items' ? "Item Table List" : "Service Table List"}</h5>
+            <h5 className="mb-0">{selectedDocType?.code == 'dDocument_Items' ? capitalizeWords(t("itemTableList")) : capitalizeWords(t("serviceTableList"))}</h5>
             <div className="flex gap-2">
-                {/* <Button
+                <Button
                     type="button"
                     icon="pi pi-copy"
                     disabled={!selectedContentRows || selectedContentRows?.length < 1}
                     rounded
                     outlined
-                    data-pr-tooltip="Copy"
-                    tooltip="Copy"
+                    data-pr-tooltip={tG("copy")}
+                    tooltip={tG("copy")}
                     tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
                     onClick={handleCopyItems}
-                /> */}
-                {/* <button
+                />
+                <button
                     type="button"
                     className="paste-btn p-button p-component p-button-icon-only p-button-outlined p-button-rounded"
-                    data-pr-tooltip="Paste"
-                    tooltip="Paste"
+                    data-pr-tooltip={tG("paste")}
+                    tooltip={tG("paste")}
                     disabled={(clipboard?.length == 0) || (selectedContentRows?.length > 1)}
                     onClick={handlePasteItems}
                 >
                     <Icon icon="icons8:paste" width="1.5rem" height="1.5rem" />
-                </button> */}
-                {/* <Tooltip target=".paste-btn" mouseTrack position={'bottom'} mouseTrackTop={15} /> */}
-                {/* <Button
+                </button>
+                <Tooltip target=".paste-btn" mouseTrack position={'bottom'} mouseTrackTop={15} />
+                <Button
                     type="button"
                     disabled={!selectedContentRows || selectedContentRows?.length < 1}
                     icon="pi pi-trash"
                     severity="danger"
                     rounded
                     outlined
-                    data-pr-tooltip="Delete"
-                    tooltip="Delete"
+                    data-pr-tooltip={tG("delete")}
+                    tooltip={tG("delete")}
                     tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
                     onClick={handleDeleteItems}
-                /> */}
+                />
                 <Button
                     type="button"
                     icon="pi pi-cog"
                     rounded
                     outlined
-                    data-pr-tooltip="Setting"
-                    tooltip="Setting"
+                    data-pr-tooltip={tG("setting")}
+                    tooltip={tG("setting")}
                     tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
                     onClick={() => setWhichColumnTableModalOpen(selectedDocType?.code == 'dDocument_Items' ? "item" : "service")}
                 />
@@ -2443,42 +2509,20 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
 
     const freightChargeTHeader = (
         <div className="flex justify-between items-center">
-            <h5 className="mb-0">Freight Charge Table List</h5>
+            <h5 className="mb-0">{capitalizeWords(t("freightChargeTableList"))}</h5>
             <div className="flex gap-2">
-                <Button
-                    type="button"
-                    disabled
-                    icon="pi pi-trash"
-                    severity="danger"
-                    rounded
-                    outlined
-                    data-pr-tooltip="Delete"
-                    tooltip="Delete"
-                    tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
-                    onClick={handleDeleteFreights}
-                />
-                {/* <Button
-                    type="button"
-                    disabled={generalInfo?.FreightCharges?.filter(f => f.ExpenseCode).length < 1}
-                    icon="pi pi-sync"
-                    severity="danger"
-                    rounded
-                    outlined
-                    data-pr-tooltip="Delete"
-                    tooltip="Refresh" t
-                    ooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
-                    onClick={handleRefresh}
-                /> */}
+                <Button type="button" disabled={!selectedFreightChargeRow || selectedFreightChargeRow?.length < 1} icon="pi pi-trash" severity="danger" rounded outlined data-pr-tooltip="Delete" tooltip="Delete" tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }} onClick={handleDeleteFreights} />
                 <Button
                     type="button"
                     icon="pi pi-cog"
                     rounded
                     outlined
-                    data-pr-tooltip="Setting"
-                    tooltip="Setting"
+                    data-pr-tooltip={tG("setting")}
+                    tooltip={tG("setting")}
                     tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
-                    onClick={() => setWhichColumnTableModalOpen("freight")}
+                    onClick={() => setWhichColumnTableModalOpen(selectedDocType?.code == 'dDocument_Items' ? "item" : "service")}
                 />
+                {/* <Button type="button" disabled={generalInfo?.FreightCharges?.filter(f => f.ExpenseCode).length < 1} icon="pi pi-sync" severity="danger" rounded outlined data-pr-tooltip="Delete" tooltip="Refresh" tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }} onClick={handleRefresh} /> */}
             </div>
         </div>
     )
@@ -2489,7 +2533,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
         return (
             <div className={className}>
                 <div className="flex align-items-center gap-2">
-                    <span className="font-bold text-lg py-2">Total Summary</span>
+                    <span className="font-bold text-lg py-2">{t("totalSummary")}</span>
                 </div>
             </div>
         );
@@ -2546,36 +2590,17 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     };
 
     const uploadItemTemplate = (file, props) => {
-        const lastModifiedDate = isoToDateFormat(file.lastModified);
-
-        const downloadFile = (e) => {
-            e.preventDefault();
-            const url = file.objectURL || URL.createObjectURL(file);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = file.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        };
-
         return (
             <div className="flex align-items-center flex-wrap">
                 <div className="flex align-items-center" style={{ width: '40%' }}>
                     <img alt={file.name} role="presentation" src={file.objectURL || "/images/document-icon.png"} width={40} />
-                    <a
-                        href="#"
-                        onClick={downloadFile}
-                        className="flex flex-column text-left ml-3"
-                        style={{ textDecoration: 'none', color: 'inherit' }}
-                    >
+                    <span className="flex flex-column text-left ml-3">
                         {file.name}
-                        <small>{lastModifiedDate}</small>
-                    </a>
+                        <small>{new Date().toLocaleDateString()}</small>
+                    </span>
                 </div>
                 <Tag value={props.formatSize} severity="warning" className="px-3 py-2" />
-                <Button type="button" icon="pi pi-times" disabled className="p-button-outlined p-button-rounded p-button-danger ml-auto" onClick={() => onTemplateRemove(file, props.onRemove)} />
+                <Button type="button" icon="pi pi-times" className="p-button-outlined p-button-rounded p-button-danger ml-auto" onClick={() => onTemplateRemove(file, props.onRemove)} />
             </div>
         );
     };
@@ -2585,7 +2610,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             <div className="flex align-items-center flex-column">
                 <i className="pi pi-file-arrow-up mt-3 p-5" style={{ fontSize: '5em', borderRadius: '50%', backgroundColor: 'var(--surface-b)', color: 'var(--surface-d)' }}></i>
                 <span style={{ fontSize: '1.2em', color: 'var(--text-color-secondary)' }} className="my-5">
-                    Drag and Drop File Here
+                    {capitalizeWords(tG("drag&drop"))}
                 </span>
             </div>
         );
@@ -2618,14 +2643,14 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
         for (const item of contentData) {
             if (item.ManageBatchNumbers) {
                 if (item.BatchNumbers.length === 0) {
-                    toast.error(`Batch numbers are required for item with id ${item.id}`);
+                    toast.error(`${tM("batchNumberRequired")} ${item.id}`);
                     return false;
                 }
             }
 
             if (item.ManageSerialNumbers) {
                 if (item.SerialNumbers.length === 0) {
-                    toast.error(`Serial numbers are required for item with id ${item.id}`);
+                    toast.error(`${tM("serialNumberRequired")} ${item.id}`);
                     return false;
                 }
             }
@@ -2633,40 +2658,6 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
 
         return true;
     };
-
-    // const uploadFileAttachments = async () => {
-    //     const files = fileUploadRef.current.getFiles();
-
-    //     if (files.length > 0) {
-    //         const formData = new FormData();
-
-    //         files.forEach((file) => {
-    //             formData.append('files', file);
-    //             formData.append('Override', 'Y');
-    //         });
-
-    //         try {
-    //             const response = await fetch('/api/purchase/upload-attachment', {
-    //                 method: 'POST',
-    //                 headers: {
-    //                     'Content-Type': 'application/json',
-    //                 },
-    //                 credentials: 'include'
-    //             });
-    //             const dataResult = await res.json();
-
-    //             // const response = await purchaseApi.uploadAttachment(formData);
-    //             console.log('Upload thành công:', dataResult);
-    //             toast.success('Upload thành công!');
-    //             return dataResult.AbsoluteEntry;
-    //         } catch (error) {
-    //             console.error('Lỗi khi upload:', error);
-    //             toast.error('Lỗi khi upload.');
-    //             return false;
-    //         }
-    //     }
-    //     return null;
-    // }
 
     const uploadFileAttachments = async () => {
         const files = fileUploadRef.current.getFiles(); // Lấy danh sách file từ ref
@@ -2718,16 +2709,10 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
 
     const handleAddAndView = async () => {
         // Validate dữ liệu
-        // setLoading(true);
-        // console.log("Ra: ", selectedDocType);
-        // const absoluteEntry1 = await uploadFileAttachments();
-        // return;
-
-
         setIsPosting(true);
         console.log("Test: ", contentData);
         if (contentData.length == 1) {
-            toast.error("Please choose at least one item.");
+            toast.error(tM("chooseItem"));
             setIsPosting(false);
             return;
         } else {
@@ -2755,16 +2740,35 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                     BatchNumbers: item.BatchNumbers.length > 0 ? item.BatchNumbers.map(batch => ({
                         BatchNumber: batch.BatchNumber,
                         ItemCode: item.ItemCode,
-                        Quantity: batch.Quantity
+                        Quantity: batch.Quantity,
+                        ManufacturerSerialNumber: batch.BatchAttribute1,
+                        InternalSerialNumber: batch.BatchAttribute2,
+                        AddmisionDate: batch.AdmissionDate,
+                        ManufacturingDate: batch.ManufacturingDate,
+                        ExpiryDate: batch.ExpirationDate,
+                        Location: batch.Location,
+                        Notes: batch.Details
                     })) : [],
                     SerialNumbers: item.SerialNumbers.length > 0 ? item.SerialNumbers.map(batch => ({
                         InternalSerialNumber: batch.IntrSerial,
+                        MfrSerialNo: serial.ManufacturerSerialNumber,
+                        BatchID: serial.LotNumber,
+                        ReceptionDate: serial.AdmissionDate,
+                        ManufactureDate: serial.ManufacturingDate,
+                        ExpiryDate: serial.ExpirationDate,
+                        WarrantyStart: serial.MfrWarrantyStart,
+                        WarrantyEnd: serial.MfrWarrantyEnd,
+                        Location: serial.Location,
+                        Notes: serial.Details,
                         Quantity: 1
                     })) : [],
                     UnitPrice: item.UnitPrice,
                     LineTotal: item.Total,
                     DiscountPercent: item.DiscountPercent,
                     MeasureUnit: item.UoMName,
+                    BaseType: item.BaseType,
+                    BaseEntry: item.BaseEntry,
+                    BaseLine: item.BaseLine
                 };
 
                 if (selectedDocType?.code !== 'dDocument_Items') {
@@ -2791,20 +2795,30 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
 
         console.log("Test: ", documentAdditionalExpenses)
 
-        const data = {
+        const finalData = {
             DocType: selectedDocType?.code,
-            CardCode: selectedSupplier.CardCode,
+            CardCode: selectedCustomer.CardCode,
+            NumAtCard: generalInfo.NumAtCard,
+            ContactPersonCode: selectedContactPerson ? selectedContactPerson.code : '',
+            SalesPersonCode: selectedSalesEmployee ? selectedSalesEmployee.code : '',
             DocDate: generalInfo.PostingDate,
             DocDueDate: generalInfo.DeliveryDate,
-            DocumentDate: generalInfo.DocumentDate,
+            TaxDate: generalInfo.DocumentDate,
+            DiscountPercent: generalInfo.DiscountPercent,
+            Rounding: generalInfo.Rounding ? "tYES" : "tNO",
+            RoundingDiffAmount: generalInfo.RoundingAmount,
+            Comments: generalInfo.Remark,
+            JournalRemark: generalInfo.JournalRemark,
             DocumentLines: documentLines,
             DocumentAdditionalExpenses: documentAdditionalExpenses,
             PaymentGroupCode: selectedPaymentTerm?.code,
-            JournalMemo: generalInfo.JournalRemark
+            CashDiscountDateOffset: generalInfo.CashDiscountDateOffset,
+            CreateQRCodeFrom: generalInfo.CreateQRCodeFrom,
+            FederalTaxID: generalInfo.FederalTaxID,
+            ImportFileNum: generalInfo.ImportFileNum,
         };
 
         console.log("Submit: ", data);
-        // return;
 
         // Upload file attachments và lấy AbsoluteEntry
         const absoluteEntry = await uploadFileAttachments();
@@ -2813,27 +2827,34 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
             setIsPosting(false);
             return;
         }
+        console.log("Plè 1: ", absoluteEntry);
 
         // Thêm AbsoluteEntry vào data
-        // data.AttachmentEntry = absoluteEntry;
+        finalData.AttachmentEntry = absoluteEntry;
 
         try {
+            console.log("Plè 2: ", finalData);
             // Thực hiện createDelivery
-            const res = await fetch('/api/purchase/create-goods-receipt-po', {
+            const res = await fetch('/api/sales/create-delivery', {
                 method: 'POST',
                 credentials: 'include',
-                body: JSON.stringify(data)
+                body: JSON.stringify(finalData)
             });
-            console.log("Kết qỉa: ", res)
-            // const res = await purchaseApi.createGoodsReceiptPO(JSON.stringify(data));
-            toast.success("Created successfully!");
+            const data = await res.json();
+            console.log("Kết qỉa: ", data);
+            if (data.DocEntry) {
+                router.push("/sales/delivery/" + data.DocEntry)
+            }
+
+            // const res = await purchaseApi.createDelivery(JSON.stringify(data));
+            toast.success(tM("successfulCreated"));
         } catch (error) {
-            console.error("Lỗi khi tạo Goods Receipt PO:", error);
+            console.error("Lỗi khi tạo Delivery:", error);
             // const errorString = error?.response?.data?.error;
             // if (errorString) {
             // toast.error(errorString);
             // } else 
-            toast.error("There was an error occurred");
+            toast.error(tM(errorOccured));
 
             // Nếu create goods receipt po không thành công, xóa attachment đã upload
             if (absoluteEntry) {
@@ -2862,28 +2883,27 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
 
     const chooseOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-choose-btn p-button-rounded p-button-outlined' };
     const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger p-button-rounded p-button-outlined' };
+
     return (
         <>
             <Head>
-                <title>{capitalizeWords(tG('goodsReceiptPO'))}</title>
+                <title>{capitalizeWords(`${tG('create')} ${tG('delivery')}`)}</title>
                 <meta name="viewport" content="initial-scale=1.0, width=device-width" />
             </Head>
             {
                 !loading ?
                     (
                         <div>
-                            <ContextMenu ref={cm} model={contextMenuItems} breakpoint="767px" />
-
-                            <div ref={containerRef} className="flex flex-col min-h-[calc(100vh-9rem)] mb-[75px]" onContextMenu={(e) => cm.current.show(e)}>
+                            <div ref={containerRef} className="flex flex-col min-h-[calc(100vh-9rem)] mb-[75px]">
                                 <div className="w-full">
                                     <div className="card p-2 sm:p-4 relative">
-                                        <h3>{tG('viewDocument')}</h3>
-                                        <Button className="absolute top-1 right-1 scale-75 sm:scale-50" icon="pi pi-info" rounded outlined size="small" severity="secondary" aria-label="Helper" onClick={() => setIsHelperOpen(true)} />
+                                        <h3>{tG('createDocument')}</h3>
+                                        <Button className="absolute top-1 right-1 scale-75 sm:scale-50" icon="pi pi-question" rounded outlined size="small" severity="secondary" aria-label="Helper" onClick={() => setIsHelperOpen(true)} />
 
                                         <div className="flex justify-center sm:justify-start flex-col sm:flex-row py-2 gap-2 sm:gap-0">
                                             <div className="flex gap-3 sm:gap-0 sm:flex-col">
                                                 <span className="flex items-center font-bold">{tG('documentType')}</span>
-                                                <span className="font-bold text-xl sm:text-2xl text-indigo-500">{tG('goodsReceiptPO')}</span>
+                                                <span className="font-bold text-xl sm:text-2xl text-indigo-500">{tG('delivery')}</span>
                                             </div>
                                             <Divider className="hidden sm:block px-3" layout="vertical" />
                                             <div className="flex gap-3">
@@ -2891,17 +2911,15 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                     <span className="flex items-center font-bold">{tG('documentNo')}</span>
                                                     {
                                                         !generalInfo.DocNum ? (<Skeleton className="h-5/6 mb-1" borderRadius="16px"></Skeleton>)
-                                                            : (<span className="font-bold text-xl sm:text-2xl text-indigo-500">{generalInfo.DocNum}</span>)
+                                                            : generalInfo.DocNumType == 'Primary' ? (<span className="font-bold text-xl sm:text-2xl text-indigo-500">{generalInfo.DocNum}</span>) : (<InputNumber inputId="integeronly" value={generalInfo.DocNum} onChange={e => setGeneralInfo(prev => ({ ...prev, DocNum: e.value }))} className="w-full text-right p-inputtext-sm" min={0} />)
                                                     }
                                                 </div>
+                                                <Button disabled={!generalInfo.DocNum} icon={`pi ${generalInfo.DocNumType == "Primary" ? 'pi-user-edit' : 'pr-times'}`} size="small" className='!h-[28px] !w-[28px] self-end' rounded text severity="secondary" aria-label="Edit Code" onClick={handleToggleDocNo} />
                                             </div>
                                             <Divider className="hidden sm:block px-3" layout="vertical" />
-                                            <div className="flex gap-3 justify-between sm:gap-0 sm:flex-col">
+                                            <div className="flex gap-3 sm:gap-0 sm:flex-col">
                                                 <span className="flex items-center font-bold">{tG('status')}</span>
-                                                {
-                                                    !generalInfo?.DocumentStatus ? (<Skeleton className="h-5/6 mb-1" borderRadius="16px"></Skeleton>)
-                                                        : (<span className="font-bold text-xl sm:text-2xl text-indigo-500">{generalInfo?.DocumentStatus?.replace("bost_", "")}</span>)
-                                                }
+                                                <span className="font-bold text-xl sm:text-2xl text-indigo-500">Open</span>
                                             </div>
                                         </div>
                                         <section>
@@ -2911,57 +2929,69 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                             </div>
                                             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px]">
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>{t('supplier')} <span className="text-red-700 font-semibold">*</span></label>
+                                                    <label className='font-semibold'>{t('customer')} <span className="text-red-700 font-semibold">*</span></label>
                                                     <div className="flex">
-                                                        {/* <Dropdown checkmark filter options={dataLoaded ? supplierListOptions : []} value={supplierListOptions?.find(val => val.code == selectedSupplier?.CardCode)}
-                                                    valueTemplate={SupplierDropdownValueTemplate} itemTemplate={SupplierDropdownItemTemplate}
-                                                    optionLabel="name" placeholder="Select supplier" onChange={(e) => handleChangeSelectedSupplier(e.value.code)} className="w-full" /> */}
-                                                        <div className="w-full p-inputtext p-disabled p-variant-filled p-component flex-1 !min-h-[42px]"><span className="h-[21px]">{generalInfo.CardCode || ''}</span></div>
-                                                        <Button icon="pi pi-arrow-up-right" onClick={() => { router.push(`/business-partner/${generalInfo?.CardCode}`) }} />
+                                                        <Dropdown checkmark filter options={dataLoaded ? customerListOptions : []} value={customerListOptions?.find(val => val.code == selectedCustomer?.CardCode)}
+                                                            valueTemplate={CustomerDropdownValueTemplate} itemTemplate={CustomerDropdownItemTemplate}
+                                                            optionLabel="name" placeholder={t('selectCustomer')} onChange={(e) => handleChangeSelectedCustomer(e.value.code)} className="w-full" />
+                                                        <Button icon="pi pi-list" onClick={() => { setCustomerSelectModalOpen(true) }} />
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>{t('supplierName')}</label>
-                                                    <div className="w-full p-inputtext p-disabled p-variant-filled p-component flex-1 !min-h-[42px]"><span className="h-[21px]">{generalInfo?.CardName || ""}</span></div>
+                                                    <label className='font-semibold'>{t('customerName')}</label>
+                                                    <div className="w-full p-inputtext p-variant-filled p-component flex-1 !min-h-[42px]"><span className="h-[21px]">{selectedCustomer?.CardName || ""}</span></div>
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('contactPerson')}</label>
-                                                    <Dropdown filter checkmark options={contactPersonListOptions} value={selectedContactPerson} optionLabel="name"
-                                                        placeholder="Select contact person" onChange={(e) => setSelectedContactPerson(e.value)} className="w-full" />
+                                                    <Dropdown filter showClear checkmark options={contactPersonListOptions} value={selectedContactPerson} optionLabel="name"
+                                                        placeholder={t("selectContactPerson")} onChange={(e) => setSelectedContactPerson(e.value)} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>{t('supplierRefNo')}</label>
-                                                    <InputText variant="filled" aria-describedby="supplier-ref-no" />
+                                                    <label className='font-semibold'>{t('customerRefNo')}</label>
+                                                    <InputText value={generalInfo.NumAtCard} onChange={() => setGeneralInfo(prev => ({ ...prev, NumAtCard: e.target.value }))} variant="filled" aria-describedby="customer-ref-no" />
                                                 </div>
+                                                {/* <div className="flex flex-column gap-2">
+                                            <label className='font-semibold'>{t('seriesNo')}</label>
+                                            <div className="flex gap-2">
+                                                <Dropdown showClear filter value={selectedSeriesNo?.type} onChange={(e) => setSelectedSeriesNo({ type: e.value, value: 11 })} options={seriesNoOptions} optionLabel="name"
+                                                    placeholder="Select series number" className="w-full flex-1" />
+                                                {
+                                                    selectedSeriesNo && (
+                                                        <InputText className="w-1/6" aria-describedby="manual-series-no" disabled={selectedSeriesNo?.type != 'manual'} value={selectedSeriesNo?.value} onChange={(e) => setSelectedSeriesNo(prev => ({ ...prev, value: e.target.value }))} />
+                                                    )
+                                                }
+                                            </div>
+                                        </div> */}
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('postingDate')}</label>
-                                                    <Calendar value={generalInfo.PostingDate} disabled maxDate={new Date()} onChange={(e) => setGeneralInfo(prev => ({ ...prev, PostingDate: e.value }))} className="text-base !opacity-100" showIcon dateFormat="dd/mm/yy" />
+                                                    <Calendar value={generalInfo.PostingDate} maxDate={new Date()} onChange={(e) => setGeneralInfo(prev => ({ ...prev, PostingDate: e.value }))} className="text-base" showIcon dateFormat="dd/mm/yy" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('dueDate')} <span className="text-red-700 font-semibold">*</span></label>
-                                                    <Calendar value={generalInfo.DeliveryDate} disabled={generalInfo.DocumentStatus == "bost_Close"} onChange={(e) => setGeneralInfo(prev => ({ ...prev, DeliveryDate: e.value }))} className="text-base" showIcon dateFormat="dd/mm/yy" />
+                                                    <Calendar value={generalInfo.DeliveryDate} onChange={(e) => setGeneralInfo(prev => ({ ...prev, DeliveryDate: e.value }))} className="text-base" showIcon dateFormat="dd/mm/yy" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('documentDate')}</label>
                                                     <Calendar value={generalInfo.DocumentDate} onChange={(e) => setGeneralInfo(prev => ({ ...prev, DocumentDate: e.value }))} className="text-base" showIcon dateFormat="dd/mm/yy" />
                                                 </div>
-                                                {/* </div> */}
+                                            </div>
 
-                                                {/* <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2"> */}
+                                            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>{t('remark')}</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t('remark'))}</label>
                                                     <InputTextarea autoResize rows={2} value={generalInfo?.Remark} onChange={(e) => setGeneralInfo(prev => ({ ...prev, Remark: e.value }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Buyer</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t('buyer'))}</label>
                                                     <Dropdown filter value={selectedSalesEmployee} onChange={(e) => setSelectedSalesEmployee(e.value)} options={salesEmployeeListOptions} optionLabel="name"
-                                                        placeholder="Select a buyer" className="w-full" />
+                                                        placeholder={t("selectBuyer")} className="w-full" />
 
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>{t('owner')}</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t('owner'))}</label>
                                                     <Dropdown filter showClear value={selectedOwner} onChange={(e) => setSelectedOwner(e.value)} options={employeeListOption} optionLabel="name"
-                                                        placeholder="Select an owner" className="w-full" />
+                                                        placeholder={t("selectOwner")} className="w-full" />
+                                                    {/* <InputText aria-describedby="price-list-help" /> */}
                                                 </div>
                                             </div>
                                         </section>
@@ -2972,114 +3002,127 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                             </div>
                                             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Currency Type</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("currencyType"))}</label>
                                                     <Dropdown value={selectedCurrency} filter onChange={handleChangeSelectedCurrency} options={currencyOptions} dataKey="code" optionLabel="name"
-                                                        placeholder="Select a currency" className="w-full" />
+                                                        placeholder={t("selectCurrency")} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Currency</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("currency"))}</label>
                                                     {
                                                         selectedCurrency?.code !== "bpCurrency" && selectedCurrency?.currency && (
-                                                            <div className="w-full p-inputtext p-inputtext-sm p-component block align-baseline min-h-[33.47px]">
+                                                            <div className="w-full p-inputtext p-inputtext-sm p-component p-inline-message p-inline-message-info block align-baseline min-h-[33.47px]">
                                                                 <p className={`truncate`}>&nbsp;{selectedCurrency?.currency}</p>
                                                             </div>
                                                         )
                                                     }
                                                     {
                                                         selectedCurrency?.code == "bpCurrency" && (
-                                                            <Dropdown value={generalInfo?.DocCurrency} disabled onChange={handleChangeDocCurrency} options={selectCurrencyOptions} dataKey="Code" optionLabel="Name"
-                                                                placeholder="Select a currency" className="w-full md:w-14rem" checkmark highlightOnSelect={false} />
+                                                            <Dropdown value={generalInfo?.DocCurrency} onChange={handleChangeDocCurrency} options={selectCurrencyOptions} dataKey="Code" optionLabel="Name"
+                                                                placeholder={t('selectCurrency')}className="w-full md:w-14rem" checkmark highlightOnSelect={false} />
                                                         )
                                                     }
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Item/Service Type</label>
-                                                    <Dropdown value={selectedDocType} disabled onChange={(e) => handleChangeItemServiceType(e)} options={documentTypeOptions} optionLabel="name"
-                                                        placeholder="Select item/service type" className="w-full" />
+                                                    <label className='font-semibold'>{capitalizeWords(t("itemServiceType"))}</label>
+                                                    <Dropdown value={selectedDocType} onChange={(e) => handleChangeItemServiceType(e)} options={documentTypeOptions} optionLabel="name" dataKey="code"
+                                                        placeholder={t("selectItemService")} className="w-full" />
                                                 </div>
                                             </div>
                                             <div className="mt-4">
                                                 {dataLoaded ?
                                                     (
-                                                        <DataTable
-                                                            ref={contentItemTableRef}
-                                                            reorderableRows
-                                                            value={contentData}
-                                                            className="list-table p-datatable-gridlines"
-                                                            editMode
-                                                            header={contentTHeader}
-                                                            // footer={contentTFooter}
-                                                            showGridlines
-                                                            onColumnResizeEnd={handleResizeColumn}
-                                                            selectionAutoFocus={false}
-                                                            // rows={8}
-                                                            // rowsPerPageOptions={[20, 50, 100, 200]}
-                                                            // selectionMode={'checkbox'}
-                                                            // selection={selectedContentRows}
-                                                            // onSelectionChange={(e) => {
-                                                            //     const currentValue = e.value;
-                                                            //     setSelectedContentRows(e.value)
-                                                            // }}
-                                                            // globalFilterFields={['DocNo', 'PostingDate', 'DocumentDate', 'DocumentTotal']}
-                                                            dataKey="id"
-                                                            stripedRows={false}
-                                                            // filters={grFilters}
-                                                            columnResizeMode="expand"
-                                                            resizableColumns
-                                                            // filterDisplay="row"
-                                                            loading={loading}
-                                                            responsiveLayout="scroll"
-                                                            sortMode="multiple"
-                                                            removableSort
-                                                            onRowReorder={(e) => setContentData(e.value)}
-                                                        // emptyMessage="No goods receipt found."
-                                                        // header={header}
-                                                        >
-                                                            {/* <Column rowReorder style={{ width: '3rem' }} /> */}
-                                                            {/* <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column> */}
-                                                            {
-                                                                selectedDocType?.code == 'dDocument_Items' && visibleItemColumns && visibleItemColumns.length > 0 && visibleItemColumns.map((col, index) => (
-                                                                    <Column
-                                                                        key={index}
-                                                                        header={col.header}
-                                                                        field={col.field}
-                                                                        style={{ minWidth: col.minWidth }}
-                                                                        // className="text-right"
-                                                                        body={col.body}
-                                                                    />
-                                                                ))
-                                                            }
-                                                            {
-                                                                selectedDocType?.code == 'dDocument_Service' && serviceColumns && serviceColumns.length > 0 && serviceColumns.map((col, index) => (
-                                                                    <Column
-                                                                        key={index}
-                                                                        header={col.header}
-                                                                        field={col.field}
-                                                                        style={{ minWidth: col.minWidth }}
-                                                                        className={col.className}
-                                                                        body={col.body}
-                                                                    />
-                                                                ))
-                                                            }
-                                                        </DataTable>
+                                                        <BlockUI autoZIndex={false} baseZIndex={1000} blocked={!selectedCustomer} template={<i className="pi pi-lock" style={{ fontSize: '3rem' }}></i>}>
+                                                            <DataTable
+                                                                ref={contentItemTableRef}
+                                                                reorderableRows
+                                                                value={contentData}
+                                                                className="list-table p-datatable-gridlines"
+                                                                editMode
+                                                                header={contentTHeader}
+                                                                // footer={contentTFooter}
+                                                                showGridlines
+                                                                onColumnResizeEnd={handleResizeColumn}
+                                                                selectionAutoFocus={false}
+                                                                // rows={8}
+                                                                // rowsPerPageOptions={[20, 50, 100, 200]}
+                                                                selectionMode={'checkbox'}
+                                                                selection={selectedContentRows}
+                                                                onSelectionChange={(e) => {
+                                                                    const currentValue = e.value;
+                                                                    setSelectedContentRows(e.value)
+                                                                }}
+                                                                // globalFilterFields={['DocNo', 'PostingDate', 'DocumentDate', 'DocumentTotal']}
+                                                                dataKey="id"
+                                                                stripedRows={false}
+                                                                // filters={grFilters}
+                                                                columnResizeMode="expand"
+                                                                resizableColumns
+                                                                // filterDisplay="row"
+                                                                loading={loading}
+                                                                responsiveLayout="scroll"
+                                                                sortMode="multiple"
+                                                                removableSort
+                                                                onRowReorder={(e) => setContentData(e.value)}
+                                                            emptyMessage={t("noDelivery")}
+                                                            // header={header}
+                                                            >
+                                                                <Column rowReorder style={{ width: '3rem' }} />
+                                                                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
+                                                                {
+                                                                    selectedDocType?.code == 'dDocument_Items' && visibleItemColumns && visibleItemColumns.length > 0 && visibleItemColumns.map((col, index) => (
+                                                                        <Column
+                                                                            key={index}
+                                                                            header={col.header}
+                                                                            field={col.field}
+                                                                            style={{ minWidth: col.minWidth }}
+                                                                            // className="text-right"
+                                                                            body={col.body}
+                                                                        />
+                                                                    ))
+                                                                }
+                                                                {
+                                                                    selectedDocType?.code == 'dDocument_Service' && visibleServiceColumns && visibleServiceColumns.length > 0 && visibleServiceColumns.map((col, index) => (
+                                                                        <Column
+                                                                            key={index}
+                                                                            header={col.header}
+                                                                            field={col.field}
+                                                                            style={{ minWidth: col.minWidth }}
+                                                                            className={col.className}
+                                                                            body={col.body}
+                                                                        />
+                                                                    ))
+                                                                }
+                                                            </DataTable>
+                                                        </BlockUI>
                                                     ) : (
                                                         <DataTable value={exampleItems} className="list-table p-datatable-gridlines"
                                                             header={contentTHeader}>
                                                             <Column body={<Skeleton />} style={{ width: '3rem' }} />
                                                             <Column body={<Skeleton />} headerStyle={{ width: '3rem' }} />
                                                             {
-                                                                contentColumns && contentColumns.length > 0 && contentColumns.map((col, index) => (
-                                                                    <Column
-                                                                        key={index}
-                                                                        // ref={index === 1 ? columnRef : null}
-                                                                        header={col.header}
-                                                                        field={col.field}
-                                                                        style={{ minWidth: col.minWidth }}
-                                                                        // className="text-right"
-                                                                        body={<Skeleton />}
-                                                                    />
-                                                                ))
-                                                            }
+                                                                    selectedDocType?.code == 'dDocument_Items' && visibleItemColumns && visibleItemColumns.length > 0 && visibleItemColumns.map((col, index) => (
+                                                                        <Column
+                                                                            key={index}
+                                                                            header={col.header}
+                                                                            field={col.field}
+                                                                            style={{ minWidth: col.minWidth }}
+                                                                            // className="text-right"
+                                                                            body={<Skeleton />}
+                                                                        />
+                                                                    ))
+                                                                }
+                                                                {
+                                                                    selectedDocType?.code == 'dDocument_Service' && visibleServiceColumns && visibleServiceColumns.length > 0 && visibleServiceColumns.map((col, index) => (
+                                                                        <Column
+                                                                            key={index}
+                                                                            header={col.header}
+                                                                            field={col.field}
+                                                                            style={{ minWidth: col.minWidth }}
+                                                                            className={col.className}
+                                                                            body={<Skeleton />}
+                                                                        />
+                                                                    ))
+                                                                }
                                                         </DataTable>
                                                     )
                                                 }
@@ -3087,54 +3130,56 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                             <div className="mt-4">
                                                 {dataLoaded ?
                                                     (
-                                                        <DataTable
-                                                            ref={freightChargeTableRef}
-                                                            reorderableRows
-                                                            value={generalInfo.FreightCharges}
-                                                            className="list-table p-datatable-gridlines"
-                                                            editMode
-                                                            header={freightChargeTHeader}
-                                                            showGridlines
-                                                            // onColumnResizeEnd={handleResizeColumn}
-                                                            selectionAutoFocus={false}
-                                                            // rows={8}
-                                                            // rowsPerPageOptions={[20, 50, 100, 200]}
-                                                            selectionMode={'checkbox'}
-                                                            selection={selectedFreightChargeRow}
-                                                            onSelectionChange={(e) => {
-                                                                const currentValue = e.value;
-                                                                setSelectedFreightChargeRow(e.value)
-                                                            }}
-                                                            // globalFilterFields={['DocNo', 'PostingDate', 'DocumentDate', 'DocumentTotal']}
-                                                            dataKey="ExpenseCode"
-                                                            stripedRows={false}
-                                                            // filters={grFilters}
-                                                            columnResizeMode="expand"
-                                                            resizableColumns
-                                                            // filterDisplay="row"
-                                                            loading={loading}
-                                                            responsiveLayout="scroll"
-                                                            sortMode="multiple"
-                                                            removableSort
-                                                            onRowReorder={(e) => setContentData(e.value)}
-                                                            emptyMessage="No freight charge found."
-                                                        // header={header}
-                                                        >
-                                                            <Column rowReorder style={{ width: '3rem' }} />
-                                                            <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
-                                                            {
-                                                                freightChargesColumns && freightChargesColumns.length > 0 && freightChargesColumns.map((col, index) => (
-                                                                    <Column
-                                                                        key={index}
-                                                                        // ref={index === 1 ? columnRef : null}
-                                                                        header={col.header}
-                                                                        field={col.field}
-                                                                        style={{ minWidth: col.minWidth }}
-                                                                        body={col.body}
-                                                                    />
-                                                                ))
-                                                            }
-                                                        </DataTable>
+                                                        <BlockUI autoZIndex={false} baseZIndex={1000} blocked={!selectedCustomer} template={<i className="pi pi-lock" style={{ fontSize: '3rem' }}></i>}>
+                                                            <DataTable
+                                                                ref={freightChargeTableRef}
+                                                                reorderableRows
+                                                                value={generalInfo.FreightCharges}
+                                                                className="list-table p-datatable-gridlines"
+                                                                editMode
+                                                                header={freightChargeTHeader}
+                                                                showGridlines
+                                                                // onColumnResizeEnd={handleResizeColumn}
+                                                                selectionAutoFocus={false}
+                                                                // rows={8}
+                                                                // rowsPerPageOptions={[20, 50, 100, 200]}
+                                                                selectionMode={'checkbox'}
+                                                                selection={selectedFreightChargeRow}
+                                                                onSelectionChange={(e) => {
+                                                                    const currentValue = e.value;
+                                                                    setSelectedFreightChargeRow(e.value)
+                                                                }}
+                                                                // globalFilterFields={['DocNo', 'PostingDate', 'DocumentDate', 'DocumentTotal']}
+                                                                dataKey="ExpenseCode"
+                                                                stripedRows={false}
+                                                                // filters={grFilters}
+                                                                columnResizeMode="expand"
+                                                                resizableColumns
+                                                                // filterDisplay="row"
+                                                                loading={loading}
+                                                                responsiveLayout="scroll"
+                                                                sortMode="multiple"
+                                                                removableSort
+                                                                onRowReorder={(e) => setContentData(e.value)}
+                                                                emptyMessage={t("noFreight")}
+                                                            // header={header}
+                                                            >
+                                                                <Column rowReorder style={{ width: '3rem' }} />
+                                                                <Column selectionMode="multiple" headerStyle={{ width: '3rem' }} />
+                                                                {
+                                                                    visibleFreightColumns && visibleFreightColumns.length > 0 && visibleFreightColumns.map((col, index) => (
+                                                                        <Column
+                                                                            key={index}
+                                                                            // ref={index === 1 ? columnRef : null}
+                                                                            header={col.header}
+                                                                            field={col.field}
+                                                                            style={{ minWidth: col.minWidth }}
+                                                                            body={col.body}
+                                                                        />
+                                                                    ))
+                                                                }
+                                                            </DataTable>
+                                                        </BlockUI>
                                                     ) :
                                                     (
                                                         <DataTable value={exampleItems} className="list-table p-datatable-gridlines"
@@ -3142,7 +3187,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                             <Column body={<Skeleton />} style={{ width: '3rem' }} />
                                                             <Column body={<Skeleton />} headerStyle={{ width: '3rem' }} />
                                                             {
-                                                                freightChargesColumns && freightChargesColumns.length > 0 && freightChargesColumns.map((col, index) => (
+                                                                visibleFreightColumns && visibleFreightColumns.length > 0 && visibleFreightColumns.map((col, index) => (
                                                                     <Column
                                                                         key={index}
                                                                         // ref={index === 1 ? columnRef : null}
@@ -3164,45 +3209,43 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                     <Panel headerTemplate={summaryHeaderTemplate}>
                                                         <ul className="list-none p-0 m-0">
                                                             <li className="flex items-center justify-between pb-1.5 px-2 border-300 flex-wrap">
-                                                                <div className="text-500 w-6 md:w-4 font-medium">Total Before Discount</div>
+                                                                <div className="text-500 w-6 md:w-4 font-medium">{capitalizeWords(t("totalBeforeDiscount"))}</div>
                                                                 {/* <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1">Heat</div> */}
                                                                 <div className="w-6 md:w-4 flex justify-content-end">
-                                                                    {formatNumberWithComma(generalInfo.TotalBeforeDiscount)} {' '} {`${generalInfo?.DocCurrency instanceof Object == true ? generalInfo?.DocCurrency?.Code : generalInfo?.DocCurrency}`}
+                                                                    {formatNumberWithComma(generalInfo.TotalBeforeDiscount)} {' '} {`${generalInfo?.DocCurrency?.Code}`}
                                                                 </div>
                                                             </li>
                                                             <li className="flex items-center justify-between py-1.5 px-2 border-top-1 border-300 flex-wrap">
-                                                                <div className="text-500 w-6 md:w-4 font-medium">Discount</div>
-                                                                <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"><InputNumber inputId="percent" className='w-full text-right p-inputtext-sm' min={0} max={100} suffix=" %" disabled value={generalInfo.DiscountPercent} onChange={(e) => setGeneralInfo(prev => ({ ...prev, DiscountPercent: e.target.value }))} />
+                                                                <div className="text-500 w-6 md:w-4 font-medium">{capitalizeWords(t("discount"))}</div>
+                                                                <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"><InputNumber inputId="percent" className='w-full text-right p-inputtext-sm' min={0} max={100} suffix=" %" value={generalInfo.DiscountPercent} onChange={(e) => setGeneralInfo(prev => ({ ...prev, DiscountPercent: e.value }))} />
                                                                 </div>
                                                                 <div className="w-6 md:w-4 flex justify-content-end">
-                                                                    {formatNumberWithComma(generalInfo.DiscountAmount)} {' '} {`${generalInfo?.DocCurrency instanceof Object == true ? generalInfo?.DocCurrency?.Code : generalInfo?.DocCurrency}`}
+                                                                    {formatNumberWithComma(generalInfo.DiscountAmount)} {' '} {`${generalInfo?.DocCurrency?.Code}`}
                                                                 </div>
                                                             </li>
                                                             <li className="flex items-center justify-between py-1.5 px-2 border-top-1 border-300 flex-wrap">
-                                                                <div className="text-500 w-4 md:w-4 font-medium">Freight</div>
+                                                                <div className="text-500 w-4 md:w-4 font-medium">{capitalizeWords(t("freight"))}</div>
                                                                 <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"></div>
-                                                                <div className="w-6 md:w-4 flex justify-content-end">{formatNumberWithComma(generalInfo.FreightAmount)} {' '} {`${generalInfo?.DocCurrency instanceof Object == true ? generalInfo?.DocCurrency?.Code : generalInfo?.DocCurrency}`}</div>
+                                                                <div className="w-6 md:w-4 flex justify-content-end">{formatNumberWithComma(generalInfo.FreightAmount)} {' '} {`${generalInfo?.DocCurrency?.Code}`}</div>
                                                             </li>
                                                             <li className="flex items-center justify-between py-1.5 px-2 border-top-1 border-300 flex-wrap">
-                                                                <div className="text-500 w-6 md:w-4 font-medium">Rounding</div>
-                                                                <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"><Checkbox onChange={e => setGeneralInfo(prev => ({ ...prev, Rounding: e.checked }))} disabled checked={generalInfo.Rounding}></Checkbox></div>
+                                                                <div className="text-500 w-6 md:w-4 font-medium">{capitalizeWords(t("rounding"))}</div>
+                                                                <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"><Checkbox onChange={e => setGeneralInfo(prev => ({ ...prev, Rounding: e.checked }))} checked={generalInfo.Rounding}></Checkbox></div>
                                                                 <div className="w-6 md:w-4 flex justify-content-end">
                                                                     {
-                                                                        // generalInfo.Rounding ? 
-                                                                        // <InputNumber inputId="integeronly" disabled value={generalInfo.RoundingAmount} onChange={e => setGeneralInfo(prev => ({ ...prev, RoundingAmount: e.value }))} className="w-full text-right p-inputtext-sm" min={0} suffix={` ${generalInfo?.DocCurrency instanceof Object == true ? generalInfo?.DocCurrency?.Code : generalInfo?.DocCurrency || ""}`} /> : 
-                                                                        `${formatNumberWithComma(generalInfo.RoundingAmount)} ${generalInfo?.DocCurrency instanceof Object == true ? generalInfo?.DocCurrency?.Code : generalInfo?.DocCurrency}`
+                                                                        generalInfo.Rounding ? <InputNumber inputId="integeronly" value={generalInfo.RoundingAmount} onChange={e => setGeneralInfo(prev => ({ ...prev, RoundingAmount: e.value }))} className="w-full text-right p-inputtext-sm" min={0} suffix={` ${generalInfo?.DocCurrency?.Code || ""}`} /> : `${formatNumberWithComma(generalInfo.RoundingAmount)} ${generalInfo?.DocCurrency?.Code}`
                                                                     }
                                                                 </div>
                                                             </li>
                                                             <li className="flex items-center justify-between py-1.5 px-2 border-top-1 border-300 flex-wrap">
-                                                                <div className="text-500 w-4 md:w-4 font-medium">Tax</div>
+                                                                <div className="text-500 w-4 md:w-4 font-medium">{capitalizeWords(t("tax"))}</div>
                                                                 <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"></div>
-                                                                <div className="w-6 md:w-4 flex justify-content-end">{formatNumberWithComma(generalInfo.TaxAmount)} {' '} {`${generalInfo?.DocCurrency instanceof Object == true ? generalInfo?.DocCurrency?.Code : generalInfo?.DocCurrency}`}</div>
+                                                                <div className="w-6 md:w-4 flex justify-content-end">{formatNumberWithComma(generalInfo.TaxAmount)} {' '} {`${generalInfo?.DocCurrency?.Code}`}</div>
                                                             </li>
                                                             <li className="flex items-center justify-between py-1.5 px-2 border-top-1 border-300 flex-wrap">
-                                                                <div className="text-500 w-4 md:w-2 font-medium">Total</div>
+                                                                <div className="text-500 w-4 md:w-2 font-medium">{capitalizeWords(t("total"))}</div>
                                                                 <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1 line-height-3"></div>
-                                                                <div className="w-6 md:w-4 flex justify-content-end">{formatNumberWithComma(generalInfo.TotalAmount)} {' '} {`${generalInfo?.DocCurrency instanceof Object == true ? generalInfo?.DocCurrency?.Code : generalInfo?.DocCurrency}`}</div>
+                                                                <div className="w-6 md:w-4 flex justify-content-end">{formatNumberWithComma(generalInfo.TotalAmount)} {' '} {`${generalInfo?.DocCurrency?.Code}`}</div>
                                                             </li>
                                                         </ul>
                                                     </Panel>
@@ -3218,82 +3261,82 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                             <Accordion style={{ marginTop: '1rem' }} multiple activeIndex={[]}>
                                                 <AccordionTab header={
                                                     <span className="font-bold text-md">
-                                                        Ship-to Address
+                                                        {capitalizeWords(t('shipToAddress'))}
                                                     </span>
                                                 }>
                                                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                         <div className="flex flex-column gap-2">
-                                                            <label className='font-semibold'>BP Address</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t("bpAddress"))}</label>
                                                             <Dropdown value={selectedShipToBPAddress} onChange={(e) => setSelectedShipToBPAddress(e.value)} options={shipToBPAddressOptions} optionLabel="name"
-                                                                placeholder="Select a BP address" className="w-full" />
+                                                                placeholder={t("selectBpAddress")} className="w-full" />
                                                         </div>
                                                         <div className="flex flex-column gap-2 md:col-span-2">
-                                                            <label className='font-semibold'>Address Summary</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t("addressSummary"))}</label>
                                                             <div className="flex">
                                                                 Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <div className="my-auto block">
-                                                                <Button label="Edit" icon="pi pi-pencil" size="small" onClick={() => setWhichEditAddressModalOpen("shipToEdit")} />
+                                                                <Button label={tG("edit")} icon="pi pi-pencil" size="small" onClick={() => setWhichEditAddressModalOpen("shipToEdit")} />
                                                             </div>
                                                             <div className="my-auto block">
-                                                                <Button label=" New" icon="pi pi-plus" size="small" onClick={() => setWhichEditAddressModalOpen("shipToDefine")} />
+                                                                <Button label={tG("new")} icon="pi pi-plus" size="small" onClick={() => setWhichEditAddressModalOpen("shipToDefine")} />
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </AccordionTab>
                                                 <AccordionTab header={
                                                     <span className="font-bold text-md">
-                                                        Bill-to Address
+                                                        {capitalizeWords(t('billToAddress'))}
                                                     </span>
                                                 }>
                                                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                         <div className="flex flex-column gap-2">
-                                                            <label className='font-semibold'>BP Address</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t('bpAddress'))}</label>
                                                             <Dropdown value={selectedBillToBPAddress} onChange={(e) => setSelectedBillToBPAddress(e.value)} options={billToBPAddressOptions} optionLabel="name"
-                                                                placeholder="Select a BP address" className="w-full" />
+                                                                placeholder={t("selectBpAddress")} className="w-full" />
                                                         </div>
                                                         <div className="flex flex-column gap-2 md:col-span-2">
-                                                            <label className='font-semibold'>Address Summary</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t('addressSummary'))}</label>
                                                             <div className="flex">
                                                                 Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <div className="my-auto block">
-                                                                <Button label="Edit" icon="pi pi-pencil" size="small" onClick={() => setWhichEditAddressModalOpen("billToEdit")} />
+                                                                <Button label={tG("edit")}  icon="pi pi-pencil" size="small" onClick={() => setWhichEditAddressModalOpen("billToEdit")} />
                                                             </div>
                                                             <div className="my-auto block">
-                                                                <Button label=" New" icon="pi pi-plus" size="small" onClick={() => setWhichEditAddressModalOpen("billToDefine")} />
+                                                                <Button label={tG("new")}  icon="pi pi-plus" size="small" onClick={() => setWhichEditAddressModalOpen("billToDefine")} />
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </AccordionTab>
                                                 <AccordionTab header={
                                                     <span className="font-bold text-md">
-                                                        Preferences
+                                                        {capitalizeWords(t('preferences'))}
                                                     </span>
                                                 }>
                                                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                         <div className="flex flex-column gap-2">
-                                                            <label className='font-semibold'>Shipping Type</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t('shippingType'))}</label>
                                                             <Dropdown value={selectedCurrency} onChange={(e) => setSelectedCurrency(e.value)} options={currencyOptions} optionLabel="name"
-                                                                placeholder="Select a currency" className="w-full" />
+                                                                placeholder={t("selectCurrency")} className="w-full" />
                                                             {/* <InputText aria-describedby="price-list-help" /> */}
                                                         </div>
                                                     </div>
                                                 </AccordionTab>
                                                 <AccordionTab header={
                                                     <span className="font-bold text-md">
-                                                        Additional Information
+                                                        {capitalizeWords(t('additionalInfo'))}
                                                     </span>
                                                 }>
                                                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                         <div className="flex flex-column gap-2">
-                                                            <label className='font-semibold'>Stamp No.</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t('stampNo'))}</label>
                                                             <Dropdown value={selectedCurrency} onChange={(e) => setSelectedCurrency(e.value)} options={currencyOptions} optionLabel="name"
-                                                                placeholder="Enter a stamp number" className="w-full" />
+                                                                placeholder={t("enterStampNo")} className="w-full" />
                                                             {/* <InputText aria-describedby="price-list-help" /> */}
                                                         </div>
                                                     </div>
@@ -3307,22 +3350,22 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                             </div>
                                             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px]">
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Journal Remark</label>
-                                                    <InputText aria-describedby="supplier-ref-no" value={generalInfo.JournalRemark} onChange={(e) => setGeneralInfo(prev => ({ ...prev, JournalRemark: e.value }))} />
+                                                    <label className='font-semibold'>{capitalizeWords(t("journalRemark"))}</label>
+                                                    <InputText aria-describedby="customer-ref-no" value={generalInfo.JournalRemark} onChange={(e) => setGeneralInfo(prev => ({ ...prev, JournalRemark: e.value }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Payment Term</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("paymentTerm"))}</label>
                                                     <Dropdown loading={!dataLoaded} checkmark filter options={paymentTermOptions} value={selectedPaymentTerm} optionLabel="name"
-                                                        placeholder={!dataLoaded ? "Loading payment term... " : "Select payment term"} onChange={(e) => setSelectedPaymentTerm(e.value)} className="w-full" />
+                                                        placeholder={!dataLoaded ?  tG("loading") + ' ' + t("paymentTerm").toLocaleLowerCase() +'...' : t("selectPaymentTerm")} onChange={(e) => setSelectedPaymentTerm(e.value)} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Payment Method</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("paymentMethod"))}</label>
                                                     <Dropdown showClear loading={!dataLoaded} filter options={paymentMethodOptions} value={selectedPaymentMethod} optionLabel="PaymentMethodCode" dataKey='PaymentMethodCode'
-                                                        onChange={(e) => setSelectedPaymentMethod(e.value)} placeholder={!dataLoaded ? "Loading payment method... " : "Select payment method"} className="w-full" />
+                                                        onChange={(e) => setSelectedPaymentMethod(e.value)} placeholder={!dataLoaded ? tG("loading") + ' ' + t("paymentMethod").toLocaleLowerCase() +'...' : t("selectPaymentMethod")} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Cash Discount Date Offset</label>
-                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.CashDiscountDateOffset} onChange={(e) => setGeneralInfo(prev => ({ ...prev, CashDiscountDateOffset: e.target.value }))} />
+                                                    <label className='font-semibold'>{capitalizeWords(t("cashDiscountDateOffset"))}</label>
+                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.CashDiscountDateOffset} onChange={(e) => setGeneralInfo(prev => ({ ...prev, CashDiscountDateOffset: e.value }))} />
                                                 </div>
                                                 {/* <div className="flex flex-column gap-2">
                                             <label className='font-semibold'>BP Project</label>
@@ -3330,22 +3373,23 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                 onChange={(e) => setSelectedBPProject(e.value)} placeholder="Select BP project" className="w-full" />
                                         </div> */}
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Create QR Code From</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("createQRCodeFrom"))}</label>
                                                     <InputTextarea autoResize rows={2} value={generalInfo.CreateQRCodeFrom} onChange={(e) => setGeneralInfo(prev => ({ ...prev, CreateQRCodeFrom: e.target.value }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Federal Tax ID</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("federalTaxID"))}</label>
                                                     <InputText aria-describedby="federal-tax-id" value={generalInfo.FederalTaxID} onChange={(e) => setGeneralInfo(prev => ({ ...prev, FederalTaxID: e.target.value }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Order Number</label>
-                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.ImportFileNum} onChange={(e) => setGeneralInfo(prev => ({ ...prev, ImportFileNum: e.target.value }))} />
+                                                    <label className='font-semibold'>{capitalizeWords(t("orderNumber"))}</label>
+                                                    <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.ImportFileNum} onChange={(e) => setGeneralInfo(prev => ({ ...prev, ImportFileNum: e.value }))} />
                                                 </div>
                                                 {/* <div className="flex flex-column gap-2">
                                             <label className='font-semibold'>Use Shipped Goods Account</label>
                                             <Dropdown showClear filter value={selectedShippedGoodsAccount} options={yesNoOption} optionLabel="name"
                                                 onChange={(e) => setSelectedShippedGoodsAccount(e.value)} placeholder="Select whether use shipped goods account" className="w-full" />
                                         </div> */}
+
                                             </div>
                                         </section>
                                         <section>
@@ -3354,7 +3398,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                                 <Divider className="my-2" />
                                             </div>
                                             <div className="mt-4">
-                                                <FileUpload disabled ref={fileUploadRef} name="demo[]" url="/api/upload" multiple accept=".doc, .docx, .xls, .xlsx, .pdf, image/*" maxFileSize={5000000}
+                                                <FileUpload ref={fileUploadRef} name="demo[]" url="/api/upload" multiple accept=".doc, .docx, .xls, .xlsx, .pdf, image/*" maxFileSize={5000000}
                                                     onUpload={onTemplateUpload} onSelect={onTemplateSelect} onError={onTemplateClear} onClear={onTemplateClear}
                                                     headerTemplate={uploadHeaderTemplate} itemTemplate={uploadItemTemplate} emptyTemplate={emptyTemplate}
                                                     chooseOptions={chooseOptions} cancelOptions={cancelOptions} />
@@ -3363,84 +3407,75 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                     </div>
                                 </div>
                             </div>
-
                             <FeatureBar
-                                mode="view"
+                                mode="create"
                                 fatherLoading={loading}
                                 currentContentLength={contentData?.length}
-                                docType="Goods Receipt PO"
-                                selectedBPCode={selectedSupplier?.CardCode}
+                                docType="Delivery"
+                                selectedBPCode={selectedCustomer?.CardCode}
                                 style={{ width: `${containerWidth}px`, maxWidth: `${containerWidth}px` }}
                                 className={`!max-w-[${containerWidth}px] !w-[${containerWidth}px]`}
                                 handleAddAndView={() => setSavingConfirmVisible(true)}
                                 handleCopyFrom={handleCopyFrom}
                             />
-
-                            <SupplierList supplierSelectModalOpen={supplierSelectModalOpen} setSupplierSelectModalOpen={(value) => setSupplierSelectModalOpen(value)} supplierList={supplierList} orignalSelectedSupplier={selectedSupplier} setSupplier={handleChangeSelectedSupplier} setSupplierList={setSupplierList} setSupplierListOptions={setSupplierListOptions} />
-                            <ItemList itemSelectModalOpen={itemSelectModalOpen} setItemSelectModalOpen={(value) => setItemSelectModalOpen(value)} itemList={itemList} selectedItemRow={selectedItemRow?.Item} setItem={handleSetItems} setItemList={setItemList} />
+                            <CustomerList customerSelectModalOpen={customerSelectModalOpen} setCustomerSelectModalOpen={(value) => setCustomerSelectModalOpen(value)} customerList={customerList} orignalSelectedCustomer={selectedCustomer} setCustomer={handleChangeSelectedCustomer} setCustomerList={setCustomerList} setCustomerListOptions={setCustomerListOptions} />
+                            <ItemList docType="purchase" itemSelectModalOpen={itemSelectModalOpen} setItemSelectModalOpen={(value) => setItemSelectModalOpen(value)} itemList={itemList} selectedItemRow={selectedItemRow?.Item} setItem={handleSetItems} setItemList={setItemList} />
                             <GLAccountList glAccountSelectModalOpen={glAccountSelectModalOpen} setGLAccountSelectModalOpen={(value) => setGLAccountSelectModalOpen(value)} selectedItemRow={selectedItemRow?.Item} setAccount={handleSetAccount} glAccountList={glAccountList} setGLAccountList={setGLAccountList} />
                             {/* <BatchSerialSelection batchSerialModalOpen={batchSerialModalOpen} item={selectedItemRow} setBatchSerialModalOpen={setBatchSerialModalOpen} setBatchSelections={handleBatchSelections} setSerialSelections={handleSerialSelections} /> */}
-                            <BatchSerialCreation mode="view" batchSerialModalOpen={batchSerialModalOpen} item={selectedItemRow} setBatchSerialModalOpen={setBatchSerialModalOpen} setBatchCreations={handleBatchCreation} setSerialCreations={handleSerialCreation} />
+                            <BatchSerialCreation mode="create" batchSerialModalOpen={batchSerialModalOpen} item={selectedItemRow} setBatchSerialModalOpen={setBatchSerialModalOpen} setBatchCreations={handleBatchCreation} setSerialCreations={handleSerialCreation} />
                             <SalesTaxCodeList taxCodeSelectModalOpen={taxCodeSelectModalOpen} setTaxCodeSelectModalOpen={(value) => setTaxCodeSelectModalOpen(value)} taxCodeList={vatGroups} selectedTaxCodeRow={selectedItemRow || selectedFreightChargeRow} setTaxCode={handleSetTaxCode} />
 
-                            <Dialog
-                                header={["shipToEdit", "billToEdit"].includes(whichEditAddressModalOpen) ? "Edit Address" : "Define New Address"}
-                                blockScroll
-                                visible={whichEditAddressModalOpen}
-                                onHide={() => setWhichEditAddressModalOpen(null)}
-                                style={{ width: '70vw' }}
-                                breakpoints={{ '960px': '75vw', '641px': '100vw' }}
-                                footer={addressModalFooter}
-                            >
+                            <Dialog header={["shipToEdit", "billToEdit"].includes(whichEditAddressModalOpen) ? "Edit Address" : "Define New Address"} blockScroll visible={whichEditAddressModalOpen} onHide={() => setWhichEditAddressModalOpen(null)}
+                                style={{ width: '70vw' }} breakpoints={{ '960px': '75vw', '641px': '100vw' }} footer={addressModalFooter}>
                                 <div className='mb-2.5 mt-4'>
                                     <h5 className='mb-0 font-bold text-indigo-600 uppercase'>General Information</h5>
                                     <Divider className="my-2" />
                                 </div>
                                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 p-[7px]">
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Street/PO Box</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("streetPOBox"))}</label>
                                         <InputText className="p-inputtext-sm" aria-describedby="street-po-box" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Street No.</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("streetNo"))}</label>
                                         <InputText className="p-inputtext-sm" aria-describedby="street-no" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Block</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("block"))}</label>
                                         <InputText className="p-inputtext-sm" aria-describedby="block" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>City</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("city"))}</label>
                                         <InputText aria-describedby="block" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Zip Code</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("zipCode"))}</label>
                                         <InputText aria-describedby="zip-code" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>County</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("county"))}</label>
                                         <InputText aria-describedby="county" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>State</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("state"))}</label>
                                         <Dropdown showClear filter options={stateListOptions} optionLabel="name"
-                                            placeholder="Select state" className="w-full" />
+                                            placeholder={tG("selectState")} className="w-full" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Country/Region</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("country"))}/{capitalizeWords(tG("region"))}</label>
                                         <Dropdown showClear filter options={countryListOptions} optionLabel="name"
-                                            placeholder="Select country" className="w-full" />
+                                            placeholder={tG("selectCountry")} className="w-full" />
                                     </div>
                                     <div className="flex flex-column col-span-2 gap-2">
-                                        <label className='font-semibold'>Building/Floor/Room</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("building"))}/{capitalizeWords(tG("floor"))}/{capitalizeWords(tG("room"))}</label>
                                         <InputTextarea aria-describedby="building-floor-room" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Address Name 2</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("address2"))}</label>
                                         <InputText aria-describedby="address-name-2" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Address Name 3</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("address3"))}</label>
                                         <InputText aria-describedby="address-name-3" />
                                     </div>
                                     <div className="flex flex-column gap-2">
@@ -3448,12 +3483,12 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                         <InputText aria-describedby="gln" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Update Existing Rows</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("updateExistingRows"))}</label>
                                         <Dropdown showClear filter value={selectedShippedGoodsAccount} options={yesNoOption} optionLabel="name"
                                             className="w-full" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Update BP Master Data</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("updateBPMasterData"))}</label>
                                         <Dropdown showClear filter value={selectedShippedGoodsAccount} options={yesNoOption} optionLabel="name"
                                             className="w-full" />
                                     </div>
@@ -3461,7 +3496,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                             </Dialog>
 
                             <Dialog
-                                header={`Tuỳ chọn cột tạo `}
+                                header={capitalizeWords(t("columnDisplaySelection"))}
                                 blockScroll
                                 visible={whichColumnTableModalOpen}
                                 onHide={() => setWhichColumnTableModalOpen(null)}
@@ -3469,6 +3504,10 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                 breakpoints={{ '960px': '75vw', '641px': '100vw' }}
                             >
                                 <div clasName="m-0 p-2 pt-1">
+                                    <div className="flex gap-2 justify-between">
+                                        <span className="text-lg">{whichColumnTableModalOpen == "item" ? visibleItemColumns?.length : whichColumnTableModalOpen == "service" ? visibleServiceColumns?.length : visibleFreightColumns?.length} column(s) selected</span>
+                                        <Button label={capitalizeWords(t("selectAll"))} onClick={onChangeSelectAllColumn} text disabled={whichColumnTableModalOpen == "item" ? (contentColumns?.length == visibleItemColumns?.length) : whichColumnTableModalOpen == "service" ? (serviceColumns?.length == visibleServiceColumns?.length) : freightChargesColumns?.length == visibleFreightColumns} />
+                                    </div>
                                     <ListBox
                                         filter
                                         listStyle={{ height: '400px' }}
@@ -3486,7 +3525,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                 visible={itemServiceWarningVisible}
                                 onHide={() => setItemServiceWarningVisible(false)}
                                 message={tM("changeType")}
-                                header="Confirmation"
+                                header={capitalizeWords(tG("confirmation"))}
                                 icon="pi pi-exclamation-triangle"
                                 accept={() => acceptChangeItemServiceType(documentTypeOptions.find(type => type.code != selectedDocType.code))}
                             />
@@ -3495,7 +3534,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                 visible={savingConfirmVisible}
                                 onHide={() => setSavingConfirmVisible(false)}
                                 message={tM("save")}
-                                header="Confirmation"
+                                header={capitalizeWords(tG("confirmation"))}
                                 icon="pi pi-exclamation-triangle"
                                 accept={() => handleAddAndView()}
                             />
@@ -3515,7 +3554,7 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
                                     </>
                                 )
                             }
-                            <GRPOHelper visible={isHelperOpen} onHide={() => setIsHelperOpen(false)} />
+                            {/* <GRPOHelper visible={isHelperOpen} onHide={() => setIsHelperOpen(false)} /> */}
                         </div>
                     ) : (
                         <Loader />
@@ -3525,5 +3564,5 @@ const CGoodsReceiptPO = ({ initialData, messages }) => {
     );
 };
 
-export default withAuth(CGoodsReceiptPO);
-// export default CreateGoodsReceiptPO;
+export default withAuth(CCreateDelivery);
+// export default CreateDelivery;

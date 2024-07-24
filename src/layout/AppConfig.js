@@ -33,7 +33,7 @@ const AppConfig = (props) => {
     const { locale, locales, route } = router;
     const [scales] = useState([12, 13, 14, 15, 16]);
 
-    const { layoutState, layoutConfig, globalLoader, setLayoutState, setLang, setLayoutConfig } = useLayoutStore(
+    const { layoutState, layoutConfig, globalLoader, setLayoutState, setLayoutConfig } = useLayoutStore(
         (state) => state,
         shallow
     );
@@ -91,10 +91,6 @@ const AppConfig = (props) => {
     useEffect(() => {
         applyScale();
     }, [layoutConfig.scale]);
-
-    useEffect(() => {
-        setLang(locale);
-    }, [locale])
 
     return (
         <>

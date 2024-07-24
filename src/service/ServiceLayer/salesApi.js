@@ -580,13 +580,17 @@ const salesApi = {
         return response;
     },
 
-    createDelivery: async (data) => {
+    createDelivery: async (data, cookies) => {
         const url = `${baseURL}/DeliveryNotes`;
+
         const options = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Content-Type': 'application/json',
+                'Cookie': cookies
             },
+            credentials: 'include', 
             body: JSON.stringify(data),
         };
 

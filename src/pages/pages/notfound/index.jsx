@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { useLayoutStore } from '@/stores/layoutStore';
 import { shallow } from 'zustand/shallow';
@@ -10,7 +10,7 @@ const NotFoundPage = () => {
         shallow
     );
     useEffect(() => {
-                document.title = 'TSC Hub - Not Found';
+        document.title = 'TSC Hub - Not Found';
 
         return () => {
             document.title = 'TSC Hub';

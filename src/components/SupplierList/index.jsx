@@ -14,8 +14,8 @@ import { formatNumberWithComma } from '@/utils/number';
 import { capitalizeWords } from '@/utils/text';
 
 const SupplierList = (props) => {
-    const t = useTranslations("CreateGoodsReceiptPO");
     const tD = useTranslations("Dialog");
+    const tG = useTranslations("General");
     const { supplierSelectModalOpen, setSupplierSelectModalOpen, supplierList, orignalSelectedSupplier, setSupplier, setSupplierList, setSupplierListOptions } = props;
     // const [itemList, setItemList] = useState(ItemList);
     const controller = new AbortController();
@@ -34,7 +34,6 @@ const SupplierList = (props) => {
     const handleConfirmModal = () => {
         setSupplier(selectedSupplier.CardCode);
         setSupplierSelectModalOpen(false);
-        toast.success("Confirm");
     }
 
     const onGlobalFilterChange = (e) => {
@@ -53,7 +52,7 @@ const SupplierList = (props) => {
                 <Button disabled={loading} icon="pi pi-refresh" rounded raised onClick={handleRefresh} />
                 <span className="p-input-icon-left">
                     <i className="pi pi-search" />
-                    <InputText value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
+                    <InputText value={globalFilterValue} onChange={onGlobalFilterChange} placeholder={capitalizeWords(tG("keywordSearch"))} />
                 </span>
             </div>
         );
@@ -62,7 +61,7 @@ const SupplierList = (props) => {
     const renderTFooter = () => {
         return (
             <div className='flex gap-4 items-center'>
-                <span><b>Total Supplier</b></span>
+                <span><b>{capitalizeWords(tD("totalSupplier"))}</b></span>
                 <Badge className='text-base' value={businessBPList?.length || 0}></Badge>
             </div>
         )
@@ -109,7 +108,6 @@ const SupplierList = (props) => {
 
         } catch (error) {
             console.error(error);
-            toast.error("Có lỗi khi lấy supplier.")
         } finally {
             setLoading(false);
         }

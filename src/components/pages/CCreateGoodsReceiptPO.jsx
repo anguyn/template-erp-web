@@ -50,6 +50,11 @@ import { useCompanyStore } from '@/stores/companyStore';
 import useStore from '@/stores/useStore';
 import GLAccountList from '../GLAccountList';
 
+const SELECT = ["AttachmentEntry", "DefaultWarehouse", "ItemCode", "ItemClass", "ItemName", "ForeignName",
+    "ItemWarehouseInfoCollection", "ItemPrices", "IssueMethod", "ItemType", "ItemDistributionRules", "Picture",
+    "ManageBatchNumbers", "ManageByQuantity", "ManageSerialNumbers", "ManageStockByWarehouse", "QuantityOnStock",
+    "SalesItem", "SalesVATGroup", "SalesUnit", "PurchaseItem", "PurchaseUnit", "PurchaseVATGroup"];
+
 const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
     // console.log("Haizz: ", messages);
     const { data } = initialData;
@@ -67,7 +72,8 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
     // console.log("Hè: ", companyInfo);
 
     const router = useRouter();
-    const t = useTranslations('CreateGoodsReceiptPO');
+    const { query, locale } = router;
+    const t = useTranslations('GoodsReceiptPO');
     const tG = useTranslations('General');
     const tM = useTranslations('Messages');
     /** Skeleton */
@@ -78,6 +84,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
     const [loading, setLoading] = useState(true);
     const [isPosting, setIsPosting] = useState(false);
     // const [generalInfo, setGeneralInfo] = useState(null);
+    const [copyDocument, setCopyDocument] = useState(null);
     const [generalInfo, setGeneralInfo] = useState({
         DocNumType: "Primary",
         DocNum: null,
@@ -125,7 +132,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
     const [selectedSeriesNo, setSelectedSeriesNo] = useState(null);
     const [selectedCurrency, setSelectedCurrency] = useState(null);
     // const [selectedCurrency, setSelectedCurrency] = useState({ name: 'Local Currency', code: 'localCurrency', currency: companyInfo?.LocalCurrency });
-    const [selectedDocType, setSelectedDocType] = useState({ name: 'Item', code: 'dDocument_Items' },);
+    const [selectedDocType, setSelectedDocType] = useState({ name: 'Item', code: 'dDocument_Items' });
     const [selectedSalesEmployee, setSelectedSalesEmployee] = useState(null);
     const [selectedOwner, setSelectedOwner] = useState(null);
     const [selectedPaymentTerm, setSelectedPaymentTerm] = useState(null);
@@ -186,10 +193,12 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
     //     { name: 'System Currency', code: 'systemCurrency', currency: companyInfo?.SystemCurrency },
     //     { name: 'BP Currency', code: 'bpCurrency', currency: null }
     // ]);
-    const [documentTypeOptions, setDocumentTypeOptions] = useState([
-        { name: 'Item', code: 'dDocument_Items' },
-        { name: 'Service', code: 'dDocument_Service' }
-    ]);
+
+    const documentTypeOptions = useMemo(() => [
+        { name: t("item"), code: 'dDocument_Items' },
+        { name: t('service'), code: 'dDocument_Service' }
+    ], [locale]);
+
     const [gradeOptions, setGradeOptions] = useState([
         { name: 'Low', code: '01' },
         { name: 'Middle', code: '02' },
@@ -316,6 +325,59 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
     }, [companyInfo, currencies])
 
     useEffect(() => {
+        const fetchItems = async (top = 1000, skip = 0) => {
+            const props = {
+                select: SELECT,
+                top,
+                skip,
+                filter: ["PurchaseItem eq 'tYES'"]
+            }
+
+            console.log("Xin tì: ", props)
+            const res = await fetch('/api/inventory/get-item', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(props),
+            });
+
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+
+            const dataResult = await res.json();
+            return dataResult.value;
+        };
+
+        // Function to handle fetching all items in batches and updating state
+        const fetchAllItemsInBatches = async (count) => {
+            const numberOfBatches = Math.ceil(count / 1000);
+            const fetchPromises = [];
+            for (let i = 0; i < numberOfBatches; i++) {
+                fetchPromises.push(fetchItems(1000, i * 1000));
+            }
+
+            try {
+                // As soon as any batch returns data, setLoading to false
+                const results = await Promise.allSettled(fetchPromises);
+                const allResults = results
+                    .filter(result => result.status === 'fulfilled')
+                    .map(result => result.value)
+                    .flat();
+
+                // If any data is returned, set loading to false to allow interaction
+                if (allResults.length > 0) {
+                    setLoading(false);
+                }
+
+                return allResults;
+            } catch (error) {
+                console.error("Error fetching items in batches", error);
+                return [];
+            }
+        };
         const fetchData = async () => {
             try {
                 // Hàm async 0: Lấy count của delivery
@@ -335,6 +397,75 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                     setDocNum(currentDocNum);
                     setGeneralInfo(prev => ({ ...prev, DocNum: currentDocNum }));
                 };
+
+                // Hàm async 1: Trường hợp link duplicate
+                const fetchCurrentGoodsReceiptPO = async () => {
+                    if (query?.docEntry && query?.base) {
+                        // Fetch the initial item count
+                        const countRes = await fetch('/api/inventory/get-item-count', {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include',
+                        });
+
+                        const countData = await countRes.json();
+                        // const fetchedItemCount = countData.count;
+                        // setItemCount(fetchedItemCount);
+                        console.log("Khùm hẻn: ", countData);
+                        console.log("Khùm hẻn 2: ", itemList);
+
+                        if (itemList?.length < 1) {
+                            // Case when item list is initially empty
+                            if (countData > 1000) {
+                                const combinedResults = await fetchAllItemsInBatches(countData);
+                                setItemList(combinedResults);
+                                setDataList(combinedResults);
+                            } else {
+                                const items = await fetchItems(countData);
+                                console.log("List of items: ", items)
+                                setItemList(items);
+                            }
+                        } else if (itemList?.length > 1 && itemList?.length !== countData) {
+                            // Case when item list is not empty but length doesn't match count
+                            if (countData > 1000) {
+                                const combinedResults = await fetchAllItemsInBatches(countData);
+                                setItemList(combinedResults);
+                            } else {
+                                const items = await fetchItems(countData);
+                                setItemList(items);
+                            }
+                        }
+
+                        const { docEntry, base } = query;
+
+                        const res = await fetch(`/api/purchase/get-goods-receipt-po?id=${docEntry}`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include'
+                        });
+                        const dataResult = await res.json();
+                        setCopyDocument(dataResult);
+                    }
+                    // const res = await fetch(`/api/purchase/get-goods-receipt-po/`, {
+                    //     method: 'GET',
+                    //     headers: {
+                    //         'Content-Type': 'application/json',
+                    //     },
+                    //     credentials: 'include'
+                    // });
+                    // const dataResult = await res.json();
+
+                    // // const dataResult = await purchaseApi.getGoodsReceiptPODocQuantity();
+                    // console.log("Ra gì: ", dataResult);
+                    // const currentDocNum = dataResult?.data ? Number(dataResult?.data) + 1 : dataResult ? Number(dataResult) + 1 : "Undefined";
+                    // setDocNum(currentDocNum);
+                    // setGeneralInfo(prev => ({ ...prev, DocNum: currentDocNum }));
+                };
+
                 // Hàm async 1: Lấy danh sách supplier
                 // const fetchSupplier = async () => {
                 //     const queryProps = {
@@ -485,6 +616,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
 
                 await Promise.all([
                     fetchGoodsReceiptPODocQuanty(),
+                    fetchCurrentGoodsReceiptPO(),
                     // fetchSupplier(),
                     // fetchItems(),
                     fetchWarehouses(),
@@ -509,6 +641,66 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
         ])
         fetchData();
     }, []);
+
+    useEffect(() => {
+        if (copyDocument) {
+            let newContentData = [];
+            let newFreightRows = [];
+
+            const copyLines = copyDocument.DocumentLines;
+            const freightLines = copyDocument.DocumentAdditionalExpenses;
+
+            if (copyLines.length > 0) {
+                newContentData = copyLines.map(({ LineNum, DocEntry, Status, WarehouseCode, ...rest }) => {
+                    const currentItem = itemList.find(item => item.ItemCode == rest.ItemCode);
+                    return {
+                        id: nanoid(6),
+                        Item: currentItem,
+                        // BaseDocType: DocumentType,
+                        // BaseDocLine: LineNum,
+                        // BaseDocEntry: DocEntry,
+                        // BaseDocumentReferenceL: DocEntry,
+                        ManageBatchNumbers: currentItem.ManageBatchNumbers === 'tYes',
+                        ManageByQuantity: currentItem.ManageByQuantity == 'tYes',
+                        ManageSerialNumbers: currentItem.ManageSerialNumbers == 'tYes',
+                        TaxCode: rest.VatGroup,
+                        TaxRate: vatGroups.find(v => v.Code == rest.VatGroup)?.VatGroups_Lines[0]?.Rate || 0,
+                        TaxAmount: rest.NetTaxAmount,
+                        Total: rest.LineTotal,
+                        GrossTota: rest.GrossTotal,
+                        Warehouse: warehouseOptions.find(w => w.code == WarehouseCode),
+                        ...rest
+                    };
+                });
+            }
+
+            if (freightLines.length > 0) {
+                newFreightRows = freightLines.map(({ LineNum, DocEntry, LineStatus, BaseOpenQuantity, ...rest }) => {
+                    return {
+                        id: nanoid(6),
+                        // BaseDocType: DocumentType,
+                        // BaseDocLine: LineNum,
+                        // BaseDocEntry: DocEntry,
+                        ...rest
+                    };
+                });
+            }
+
+            if (newContentData.length > 0) {
+                const lastItem = contentData[contentData.length - 1];
+                setContentData([...newContentData, lastItem]);
+            }
+
+            if (newFreightRows.length) {
+                const lastItem = generalInfo.FreightCharges[generalInfo.FreightCharges.length - 1];
+                setGeneralInfo(prev => ({
+                    ...prev,
+                    FreightCharges: [...newFreightRows, lastItem]
+                }));
+            }
+
+        }
+    }, [copyDocument])
 
     useEffect(() => {
         console.log("Quá là mệt mỏi thiệt lun á chài: ", contentData)
@@ -693,7 +885,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
     };
 
     const RowNumberTemplate = (product, row) => {
-        return <>&nbsp;{row.rowIndex && (row.rowIndex + 1 || "1")}</>;
+        return <>&nbsp;{(Number(row.rowIndex) + 1) || "1"}</>;
     }
 
     const ItemRateTemplate = (product) => {
@@ -781,7 +973,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                     if (discountPercent < 0 || discountPercent > 100) {
                         console.log("Discount percent: ", discountPercent);
                         console.log("Event nè: ", e.target);
-                        toast("Vui lòng kiểm tra lại giá trị nhập.")
+                        toast(tM("checkInput"))
                         // Keep the input focused and data unchanged
                         return { ...content };
                     } else {
@@ -825,7 +1017,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                     options={warehouseOptions}
                     onChange={handleEditItemWarehouse}
                     optionLabel="name"
-                    placeholder="Select a warehouse"
+                    placeholder={t("selectWarehouse")}
                     className="p-inputtext-sm w-full"
                 />
             </>
@@ -918,7 +1110,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                     options={gradeOptions}
                     onChange={handleEditItemGrade}
                     optionLabel="name"
-                    placeholder="Select a grade"
+                    placeholder={t("selectGrade")}
                     className="p-inputtext-sm w-full"
                 />
             </>
@@ -940,7 +1132,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                     options={systemOptions}
                     onChange={handleEditItemSystem}
                     optionLabel="name"
-                    placeholder="Select a system"
+                    placeholder={t("selectSystem")}
                     className="p-inputtext-sm w-full"
                 />
             </>
@@ -1068,7 +1260,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                             onChange={handleEditFreight}
                             optionLabel="Name"
                             dataKey="ExpenseCode"
-                            placeholder="Select an expense"
+                            placeholder={t("selectExpense")}
                             className="p-inputtext-sm w-full"
                         />
                     ) : (
@@ -1168,8 +1360,8 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
     const addressModalFooter = () => {
         return (
             <div>
-                <Button label="Cancel" icon="pi pi-times" onClick={() => setWhichEditAddressModalOpen(null)} className="p-button-text" />
-                <Button label="Yes" icon="pi pi-check" onClick={handleConfirmAddressModal} autoFocus />
+                <Button label={tG("cancel")}  icon="pi pi-times" onClick={() => setWhichEditAddressModalOpen(null)} className="p-button-text" />
+                <Button label={tG("yes")} icon="pi pi-check" onClick={handleConfirmAddressModal} autoFocus />
             </div>
         )
     };
@@ -1184,163 +1376,149 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                 body: RowNumberTemplate
             },
             {
-                header: 'Item No.',
+                header: capitalizeWords(t("itemNo")),
                 field: 'ItemNo',
                 className: 'text-center',
                 minWidth: '12rem',
                 body: ItemNoTemplate
             },
             {
-                header: 'Item Description',
+                header: capitalizeWords(t("itemDescription")),
                 field: 'ItemDescription',
                 className: 'text-center',
                 minWidth: '12rem',
                 body: ItemDescriptionTemplate
             },
             {
-                header: 'Quantity',
+                header: capitalizeWords(t("quantity")),
                 field: 'Quantity',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemQuantityTemplate
             },
             {
-                header: 'Unit Price',
+                header: capitalizeWords(t("unitPrice")),
                 field: 'UnitPrice',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemUnitPriceTemplate
             },
             {
-                header: 'Discount %',
+                header: capitalizeWords(t("discountPercent")),
                 field: 'DiscountPercent',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemDiscountPercentTemplate
             },
             {
-                header: 'Rate',
+                header: capitalizeWords(t("rate")),
                 field: 'Rate',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemRateTemplate
             },
             {
-                header: 'Total After Discount',
+                header: capitalizeWords(t("totalAfterDiscount")),
                 field: 'Total',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTotalTemplate
             },
             {
-                header: 'Tax Code',
+                header: capitalizeWords(t("taxCode")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxCodeTemplate
             },
             {
-                header: 'Tax Rate',
+                header: capitalizeWords(t("taxRate")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxRateTemplate
             },
             {
-                header: 'Tax Amount',
+                header: capitalizeWords(t("taxAmount")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxAmountTemplate
             },
             {
-                header: 'Gross Total After Discount',
+                header: capitalizeWords(t("grossTotalAfterDiscount")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGrossTotalTemplate
             },
             {
-                header: 'Warehouse',
+                header: capitalizeWords(t("warehouse")),
                 field: 'Warehouse',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemWarehouseTemplate
             },
             {
-                header: 'Batch/Serial Number',
+                header: capitalizeWords(t("batchSerialNumber")),
                 className: 'text-left',
                 minWidth: '14rem',
                 body: ItemBatchSerialTemplate
             },
             {
-                header: 'UoM Name',
+                header: capitalizeWords(t("uomName")),
                 field: 'UoMName',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: UoMNameTemplate
             },
-            // {
-            //     header: 'Description VN',
-            //     field: 'U_DescriptionVi',
-            //     className: 'text-right',
-            //     minWidth: '14rem',
-            //     body: (product) => BodyDescriptionTemplate(product, 'vi')
-            // },
-            // {
-            //     header: 'Description EN',
-            //     field: 'U_DescriptionEn',
-            //     className: 'text-right',
-            //     minWidth: '14rem',
-            //     body: (product) => BodyDescriptionTemplate(product, 'en')
-            // },
             {
-                header: 'System',
+                header: capitalizeWords(t("system")),
                 field: 'U_System',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemSystemTemplate
             },
             {
-                header: 'Actual Days',
+                header: capitalizeWords(t("actualDays")),
                 field: 'U_ActualDays',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemActualDaysTemplate
             },
             {
-                header: 'Standard Days',
+                header: capitalizeWords(t("standardDays")),
                 field: 'U_StandardDays',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemStandardDaysTemplate
             },
             {
-                header: 'Grade',
+                header: capitalizeWords(t("grade")),
                 field: 'U_Grade',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGradeTemplate
             },
             {
-                header: 'Remark',
+                header: capitalizeWords(t("remark")),
                 field: 'U_Remark',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemRemarkTemplate
             },
             {
-                header: 'Item/Service Detail',
+                header: capitalizeWords(t("itemServiceDetail")),
                 field: 'U_Detail',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemDetailTemplate
             },
             {
-                header: 'APInvoice eNo.',
+                header: capitalizeWords(t("apInvoiceENo")),
                 field: 'U_APInvoiceNo',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: APInvoiceENoTemplate
             },
         ],
-        [itemList, warehouseOptions, contentData]
+        [itemList, warehouseOptions, contentData, locale]
     );
 
     const serviceColumns = useMemo(
@@ -1353,150 +1531,136 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                 body: RowNumberTemplate
             },
             {
-                header: 'Description',
+                header: capitalizeWords(t("description")),
                 field: 'ItemDescription',
                 className: 'text-center',
                 minWidth: '12rem',
                 body: ItemDescriptionTemplate
             },
             {
-                header: 'Quantity',
+                header: capitalizeWords(t("quantity")),
                 field: 'Quantity',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemQuantityTemplate
             },
             {
-                header: 'Unit Price',
+                header: capitalizeWords(t("unitPrice")),
                 field: 'UnitPrice',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemUnitPriceTemplate
             },
             {
-                header: 'G/L Account Code',
+                header: capitalizeWords(t("glAccountCode")),
                 field: 'GLAccount',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGLAccountCodeTemplate
             },
             {
-                header: 'G/L Account Name',
+                header: capitalizeWords(t("glAccountName")),
                 field: 'GLAccountName',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGLAccountNameTemplate
             },
             {
-                header: 'Discount %',
+                header: capitalizeWords(t("discountPercent")),
                 field: 'DiscountPercent',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemDiscountPercentTemplate
             },
             {
-                header: 'Total After Discount',
+                header: capitalizeWords(t("totalAfterDiscount")),
                 field: 'Total',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTotalTemplate
             },
             {
-                header: 'Tax Code',
+                header: capitalizeWords(t("taxCode")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxCodeTemplate
             },
             {
-                header: 'Tax Rate',
+                header: capitalizeWords(t("taxRate")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxRateTemplate
             },
             {
-                header: 'Tax Amount',
+                header: capitalizeWords(t("taxAmount")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemTaxAmountTemplate
             },
             {
-                header: 'Gross Total After Discount',
+                header: capitalizeWords(t("grossTotalAfterDiscount")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGrossTotalTemplate
             },
             {
-                header: 'UoM Name',
+                header: capitalizeWords(t("uomName")),
                 field: 'UoMName',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: UoMNameTemplate
             },
-            // {
-            //     header: 'Description VN',
-            //     field: 'U_DescriptionVi',
-            //     className: 'text-right',
-            //     minWidth: '14rem',
-            //     body: (product) => BodyDescriptionTemplate(product, 'vi')
-            // },
-            // {
-            //     header: 'Description EN',
-            //     field: 'U_DescriptionEn',
-            //     className: 'text-right',
-            //     minWidth: '14rem',
-            //     body: (product) => BodyDescriptionTemplate(product, 'en')
-            // },
             {
-                header: 'System',
+                header: capitalizeWords(t("system")),
                 field: 'U_System',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemSystemTemplate
             },
             {
-                header: 'Actual Days',
+                header: capitalizeWords(t("actualDays")),
                 field: 'U_ActualDays',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemActualDaysTemplate
             },
             {
-                header: 'Standard Days',
+                header: capitalizeWords(t("standardDays")),
                 field: 'U_StandardDays',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: ItemStandardDaysTemplate
             },
             {
-                header: 'Grade',
+                header: capitalizeWords(t("grade")),
                 field: 'U_Grade',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemGradeTemplate
             },
             {
-                header: 'Remark',
+                header: capitalizeWords(t("remark")),
                 field: 'U_Remark',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemRemarkTemplate
             },
             {
-                header: 'Item/Service Detail',
+                header: capitalizeWords(t("itemServiceDetail")),
                 field: 'U_Detail',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: ItemDetailTemplate
             },
             {
-                header: 'APInvoice eNo.',
+                header: capitalizeWords(t("apInvoiceENo")),
                 field: 'U_APInvoiceNo',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: APInvoiceENoTemplate
             },
         ],
-        [contentData]
+        [contentData, locale]
     );
 
     const freightChargesColumns = useMemo(
@@ -1509,60 +1673,60 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                 body: RowNumberTemplate
             },
             {
-                header: 'Freight Name',
+                header: capitalizeWords(t("freightName")),
                 field: 'Name',
                 className: 'text-left',
                 minWidth: '12rem',
                 body: FreightNameTemplate
             },
             {
-                header: 'Remarks',
+                header: capitalizeWords(t("remark")),
                 field: 'Remarks',
                 className: 'text-left',
                 minWidth: '12rem',
                 body: FreightRemarkTemplate
             },
             {
-                header: 'Tax Code',
+                header: capitalizeWords(t("taxCode")),
                 field: 'TaxCode',
                 className: 'text-center',
                 minWidth: '14rem',
                 body: FreightTaxCodeTemplate
             },
             {
-                header: 'Tax %',
+                header: capitalizeWords(t("taxRate")),
                 className: 'text-right',
                 minWidth: '14rem',
                 body: FreightTaxRateTemplate
             },
             {
-                header: 'Tax Amount',
+                header: capitalizeWords(t("taxAmount")),
                 field: 'TaxAmount',
                 className: 'text-right',
                 minWidth: '14rem'
             },
             {
-                header: 'Total Tax Amount',
+                header: capitalizeWords(t("totalTaxAmount")),
                 field: 'TotalTaxAmount',
                 className: 'text-right',
                 minWidth: '14rem'
             },
             {
-                header: 'Net Amount',
+                header: capitalizeWords(t("netAmount")),
                 field: 'NetAmount',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: FreightNetAmountTemplate
             },
             {
-                header: 'Gross Amount',
+                header: capitalizeWords(t("grossAmount")),
                 field: 'GrossAmount',
                 className: 'text-right',
                 minWidth: '14rem',
                 body: FreightGrossAmountTemplate
             },
         ],
-        [freightChargeOptions, generalInfo]
+        [freightChargeOptions, generalInfo, locale]
     );
 
     const { width: containerWidth, height: containerHeight, ref: containerRef } = useResizeDetector();
@@ -2044,7 +2208,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                 setContentData([...newContentData]);
             }
         }
-        toast.success("Deleted successfully!");
+        toast.success(tM("successfulDeleted"));
     }
 
     const handleCopyItems = () => {
@@ -2117,7 +2281,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                 }));
             }
         }
-        toast.success("Deleted successfully!");
+        toast.success(tM("successfulDeleted"));
     }
 
     const handleCopyFrom = (data) => {
@@ -2171,10 +2335,9 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                             return {
                                 id: nanoid(6),
                                 Item: currentItem,
-                                BaseDocType: DocumentType,
-                                BaseDocLine: LineNum,
-                                BaseDocEntry: DocEntry,
-                                BaseDocumentReferenceL: DocEntry,
+                                BaseType: DocumentType,
+                                BaseLine: LineNum,
+                                BaseEntry: DocEntry,
                                 ManageBatchNumbers: currentItem.ManageBatchNumbers === 'tYes',
                                 ManageByQuantity: currentItem.ManageByQuantity == 'tYes',
                                 ManageSerialNumbers: currentItem.ManageSerialNumbers == 'tYes',
@@ -2253,7 +2416,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
             switch (whichColumnTableModalOpen) {
                 case "item":
                     setVisibleItemColumns(contentColumns);
-    
+
                     break;
                 case "service":
                     setVisibleServiceColumns(serviceColumns);
@@ -2261,7 +2424,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                 case "freight":
                     setVisibleFreightColumns(freightChargesColumns);
                     break;
-    
+
                 default:
                     break;
             }
@@ -2294,7 +2457,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
 
     const contentTHeader = (
         <div className="flex justify-between items-center">
-            <h5 className="mb-0">{selectedDocType?.code == 'dDocument_Items' ? "Item Table List" : "Service Table List"}</h5>
+            <h5 className="mb-0">{selectedDocType?.code == 'dDocument_Items' ? capitalizeWords(t("itemTableList")) : capitalizeWords(t("serviceTableList"))}</h5>
             <div className="flex gap-2">
                 <Button
                     type="button"
@@ -2302,16 +2465,16 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                     disabled={!selectedContentRows || selectedContentRows?.length < 1}
                     rounded
                     outlined
-                    data-pr-tooltip="Copy"
-                    tooltip="Copy"
+                    data-pr-tooltip={tG("copy")}
+                    tooltip={tG("copy")}
                     tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
                     onClick={handleCopyItems}
                 />
                 <button
                     type="button"
                     className="paste-btn p-button p-component p-button-icon-only p-button-outlined p-button-rounded"
-                    data-pr-tooltip="Paste"
-                    tooltip="Paste"
+                    data-pr-tooltip={tG("paste")}
+                    tooltip={tG("paste")}
                     disabled={(clipboard?.length == 0) || (selectedContentRows?.length > 1)}
                     onClick={handlePasteItems}
                 >
@@ -2325,8 +2488,8 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                     severity="danger"
                     rounded
                     outlined
-                    data-pr-tooltip="Delete"
-                    tooltip="Delete"
+                    data-pr-tooltip={tG("delete")}
+                    tooltip={tG("delete")}
                     tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
                     onClick={handleDeleteItems}
                 />
@@ -2335,8 +2498,8 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                     icon="pi pi-cog"
                     rounded
                     outlined
-                    data-pr-tooltip="Setting"
-                    tooltip="Setting"
+                    data-pr-tooltip={tG("setting")}
+                    tooltip={tG("setting")}
                     tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
                     onClick={() => setWhichColumnTableModalOpen(selectedDocType?.code == 'dDocument_Items' ? "item" : "service")}
                 />
@@ -2346,7 +2509,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
 
     const freightChargeTHeader = (
         <div className="flex justify-between items-center">
-            <h5 className="mb-0">Freight Charge Table List</h5>
+            <h5 className="mb-0">{capitalizeWords(t("freightChargeTableList"))}</h5>
             <div className="flex gap-2">
                 <Button type="button" disabled={!selectedFreightChargeRow || selectedFreightChargeRow?.length < 1} icon="pi pi-trash" severity="danger" rounded outlined data-pr-tooltip="Delete" tooltip="Delete" tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }} onClick={handleDeleteFreights} />
                 <Button
@@ -2354,8 +2517,8 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                     icon="pi pi-cog"
                     rounded
                     outlined
-                    data-pr-tooltip="Setting"
-                    tooltip="Setting"
+                    data-pr-tooltip={tG("setting")}
+                    tooltip={tG("setting")}
                     tooltipOptions={{ position: 'bottom', mouseTrack: true, mouseTrackTop: 15 }}
                     onClick={() => setWhichColumnTableModalOpen(selectedDocType?.code == 'dDocument_Items' ? "item" : "service")}
                 />
@@ -2370,7 +2533,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
         return (
             <div className={className}>
                 <div className="flex align-items-center gap-2">
-                    <span className="font-bold text-lg py-2">Total Summary</span>
+                    <span className="font-bold text-lg py-2">{t("totalSummary")}</span>
                 </div>
             </div>
         );
@@ -2447,7 +2610,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
             <div className="flex align-items-center flex-column">
                 <i className="pi pi-file-arrow-up mt-3 p-5" style={{ fontSize: '5em', borderRadius: '50%', backgroundColor: 'var(--surface-b)', color: 'var(--surface-d)' }}></i>
                 <span style={{ fontSize: '1.2em', color: 'var(--text-color-secondary)' }} className="my-5">
-                    Drag and Drop File Here
+                    {capitalizeWords(tG("drag&drop"))}
                 </span>
             </div>
         );
@@ -2480,14 +2643,14 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
         for (const item of contentData) {
             if (item.ManageBatchNumbers) {
                 if (item.BatchNumbers.length === 0) {
-                    toast.error(`Batch numbers are required for item with id ${item.id}`);
+                    toast.error(`${tM("batchNumberRequired")} ${item.id}`);
                     return false;
                 }
             }
 
             if (item.ManageSerialNumbers) {
                 if (item.SerialNumbers.length === 0) {
-                    toast.error(`Serial numbers are required for item with id ${item.id}`);
+                    toast.error(`${tM("serialNumberRequired")} ${item.id}`);
                     return false;
                 }
             }
@@ -2495,40 +2658,6 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
 
         return true;
     };
-
-    // const uploadFileAttachments = async () => {
-    //     const files = fileUploadRef.current.getFiles();
-
-    //     if (files.length > 0) {
-    //         const formData = new FormData();
-
-    //         files.forEach((file) => {
-    //             formData.append('files', file);
-    //             formData.append('Override', 'Y');
-    //         });
-
-    //         try {
-    //             const response = await fetch('/api/purchase/upload-attachment', {
-    //                 method: 'POST',
-    //                 headers: {
-    //                     'Content-Type': 'application/json',
-    //                 },
-    //                 credentials: 'include'
-    //             });
-    //             const dataResult = await res.json();
-
-    //             // const response = await purchaseApi.uploadAttachment(formData);
-    //             console.log('Upload thành công:', dataResult);
-    //             toast.success('Upload thành công!');
-    //             return dataResult.AbsoluteEntry;
-    //         } catch (error) {
-    //             console.error('Lỗi khi upload:', error);
-    //             toast.error('Lỗi khi upload.');
-    //             return false;
-    //         }
-    //     }
-    //     return null;
-    // }
 
     const uploadFileAttachments = async () => {
         const files = fileUploadRef.current.getFiles(); // Lấy danh sách file từ ref
@@ -2580,16 +2709,10 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
 
     const handleAddAndView = async () => {
         // Validate dữ liệu
-        // setLoading(true);
-        // console.log("Ra: ", selectedDocType);
-        // const absoluteEntry1 = await uploadFileAttachments();
-        // return;
-
-
         setIsPosting(true);
         console.log("Test: ", contentData);
         if (contentData.length == 1) {
-            toast.error("Please choose at least one item.");
+            toast.error(tM("chooseItem"));
             setIsPosting(false);
             return;
         } else {
@@ -2643,6 +2766,9 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                     LineTotal: item.Total,
                     DiscountPercent: item.DiscountPercent,
                     MeasureUnit: item.UoMName,
+                    BaseType: item.BaseType,
+                    BaseEntry: item.BaseEntry,
+                    BaseLine: item.BaseLine
                 };
 
                 if (selectedDocType?.code !== 'dDocument_Items') {
@@ -2693,7 +2819,6 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
         };
 
         console.log("Submit: ", data);
-        // return;
 
         // Upload file attachments và lấy AbsoluteEntry
         const absoluteEntry = await uploadFileAttachments();
@@ -2722,14 +2847,14 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
             }
 
             // const res = await purchaseApi.createGoodsReceiptPO(JSON.stringify(data));
-            toast.success("Created successfully!");
+            toast.success(tM("successfulCreated"));
         } catch (error) {
             console.error("Lỗi khi tạo Goods Receipt PO:", error);
             // const errorString = error?.response?.data?.error;
             // if (errorString) {
             // toast.error(errorString);
             // } else 
-            toast.error("There was an error occurred");
+            toast.error(tM(errorOccured));
 
             // Nếu create goods receipt po không thành công, xóa attachment đã upload
             if (absoluteEntry) {
@@ -2749,6 +2874,12 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
             setIsPosting(false);
         }
     }
+
+    useEffect(() => {
+        setVisibleItemColumns(contentColumns);
+        setVisibleServiceColumns(serviceColumns);
+        setVisibleFreightColumns(freightChargesColumns);
+    }, [contentColumns, serviceColumns, freightChargesColumns]);
 
     const chooseOptions = { icon: 'pi pi-fw pi-cloud-upload', iconOnly: true, className: 'custom-choose-btn p-button-rounded p-button-outlined' };
     const cancelOptions = { icon: 'pi pi-fw pi-times', iconOnly: true, className: 'custom-cancel-btn p-button-danger p-button-rounded p-button-outlined' };
@@ -2802,7 +2933,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                     <div className="flex">
                                                         <Dropdown checkmark filter options={dataLoaded ? supplierListOptions : []} value={supplierListOptions?.find(val => val.code == selectedSupplier?.CardCode)}
                                                             valueTemplate={SupplierDropdownValueTemplate} itemTemplate={SupplierDropdownItemTemplate}
-                                                            optionLabel="name" placeholder="Select supplier" onChange={(e) => handleChangeSelectedSupplier(e.value.code)} className="w-full" />
+                                                            optionLabel="name" placeholder={t('selectSupplier')} onChange={(e) => handleChangeSelectedSupplier(e.value.code)} className="w-full" />
                                                         <Button icon="pi pi-list" onClick={() => { setSupplierSelectModalOpen(true) }} />
                                                     </div>
                                                 </div>
@@ -2813,7 +2944,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('contactPerson')}</label>
                                                     <Dropdown filter showClear checkmark options={contactPersonListOptions} value={selectedContactPerson} optionLabel="name"
-                                                        placeholder="Select contact person" onChange={(e) => setSelectedContactPerson(e.value)} className="w-full" />
+                                                        placeholder={t("selectContactPerson")} onChange={(e) => setSelectedContactPerson(e.value)} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
                                                     <label className='font-semibold'>{t('supplierRefNo')}</label>
@@ -2847,19 +2978,19 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
 
                                             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>{t('remark')}</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t('remark'))}</label>
                                                     <InputTextarea autoResize rows={2} value={generalInfo?.Remark} onChange={(e) => setGeneralInfo(prev => ({ ...prev, Remark: e.value }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Buyer</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t('buyer'))}</label>
                                                     <Dropdown filter value={selectedSalesEmployee} onChange={(e) => setSelectedSalesEmployee(e.value)} options={salesEmployeeListOptions} optionLabel="name"
-                                                        placeholder="Select a buyer" className="w-full" />
+                                                        placeholder={t("selectBuyer")} className="w-full" />
 
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>{t('owner')}</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t('owner'))}</label>
                                                     <Dropdown filter showClear value={selectedOwner} onChange={(e) => setSelectedOwner(e.value)} options={employeeListOption} optionLabel="name"
-                                                        placeholder="Select an owner" className="w-full" />
+                                                        placeholder={t("selectOwner")} className="w-full" />
                                                     {/* <InputText aria-describedby="price-list-help" /> */}
                                                 </div>
                                             </div>
@@ -2871,12 +3002,12 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                             </div>
                                             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Currency Type</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("currencyType"))}</label>
                                                     <Dropdown value={selectedCurrency} filter onChange={handleChangeSelectedCurrency} options={currencyOptions} dataKey="code" optionLabel="name"
-                                                        placeholder="Select a currency" className="w-full" />
+                                                        placeholder={t("selectCurrency")} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Currency</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("currency"))}</label>
                                                     {
                                                         selectedCurrency?.code !== "bpCurrency" && selectedCurrency?.currency && (
                                                             <div className="w-full p-inputtext p-inputtext-sm p-component p-inline-message p-inline-message-info block align-baseline min-h-[33.47px]">
@@ -2887,14 +3018,14 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                     {
                                                         selectedCurrency?.code == "bpCurrency" && (
                                                             <Dropdown value={generalInfo?.DocCurrency} onChange={handleChangeDocCurrency} options={selectCurrencyOptions} dataKey="Code" optionLabel="Name"
-                                                                placeholder="Select a currency" className="w-full md:w-14rem" checkmark highlightOnSelect={false} />
+                                                                placeholder={t('selectCurrency')}className="w-full md:w-14rem" checkmark highlightOnSelect={false} />
                                                         )
                                                     }
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Item/Service Type</label>
-                                                    <Dropdown value={selectedDocType} onChange={(e) => handleChangeItemServiceType(e)} options={documentTypeOptions} optionLabel="name"
-                                                        placeholder="Select item/service type" className="w-full" />
+                                                    <label className='font-semibold'>{capitalizeWords(t("itemServiceType"))}</label>
+                                                    <Dropdown value={selectedDocType} onChange={(e) => handleChangeItemServiceType(e)} options={documentTypeOptions} optionLabel="name" dataKey="code"
+                                                        placeholder={t("selectItemService")} className="w-full" />
                                                 </div>
                                             </div>
                                             <div className="mt-4">
@@ -2932,7 +3063,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                                 sortMode="multiple"
                                                                 removableSort
                                                                 onRowReorder={(e) => setContentData(e.value)}
-                                                            // emptyMessage="No goods receipt found."
+                                                            emptyMessage={t("noGoodsReceiptPO")}
                                                             // header={header}
                                                             >
                                                                 <Column rowReorder style={{ width: '3rem' }} />
@@ -2969,18 +3100,29 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                             <Column body={<Skeleton />} style={{ width: '3rem' }} />
                                                             <Column body={<Skeleton />} headerStyle={{ width: '3rem' }} />
                                                             {
-                                                                contentColumns && contentColumns.length > 0 && contentColumns.map((col, index) => (
-                                                                    <Column
-                                                                        key={index}
-                                                                        // ref={index === 1 ? columnRef : null}
-                                                                        header={col.header}
-                                                                        field={col.field}
-                                                                        style={{ minWidth: col.minWidth }}
-                                                                        // className="text-right"
-                                                                        body={<Skeleton />}
-                                                                    />
-                                                                ))
-                                                            }
+                                                                    selectedDocType?.code == 'dDocument_Items' && visibleItemColumns && visibleItemColumns.length > 0 && visibleItemColumns.map((col, index) => (
+                                                                        <Column
+                                                                            key={index}
+                                                                            header={col.header}
+                                                                            field={col.field}
+                                                                            style={{ minWidth: col.minWidth }}
+                                                                            // className="text-right"
+                                                                            body={<Skeleton />}
+                                                                        />
+                                                                    ))
+                                                                }
+                                                                {
+                                                                    selectedDocType?.code == 'dDocument_Service' && visibleServiceColumns && visibleServiceColumns.length > 0 && visibleServiceColumns.map((col, index) => (
+                                                                        <Column
+                                                                            key={index}
+                                                                            header={col.header}
+                                                                            field={col.field}
+                                                                            style={{ minWidth: col.minWidth }}
+                                                                            className={col.className}
+                                                                            body={<Skeleton />}
+                                                                        />
+                                                                    ))
+                                                                }
                                                         </DataTable>
                                                     )
                                                 }
@@ -3019,7 +3161,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                                 sortMode="multiple"
                                                                 removableSort
                                                                 onRowReorder={(e) => setContentData(e.value)}
-                                                                emptyMessage="No freight charge found."
+                                                                emptyMessage={t("noFreight")}
                                                             // header={header}
                                                             >
                                                                 <Column rowReorder style={{ width: '3rem' }} />
@@ -3045,7 +3187,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                             <Column body={<Skeleton />} style={{ width: '3rem' }} />
                                                             <Column body={<Skeleton />} headerStyle={{ width: '3rem' }} />
                                                             {
-                                                                freightChargesColumns && freightChargesColumns.length > 0 && freightChargesColumns.map((col, index) => (
+                                                                visibleFreightColumns && visibleFreightColumns.length > 0 && visibleFreightColumns.map((col, index) => (
                                                                     <Column
                                                                         key={index}
                                                                         // ref={index === 1 ? columnRef : null}
@@ -3067,14 +3209,14 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                     <Panel headerTemplate={summaryHeaderTemplate}>
                                                         <ul className="list-none p-0 m-0">
                                                             <li className="flex items-center justify-between pb-1.5 px-2 border-300 flex-wrap">
-                                                                <div className="text-500 w-6 md:w-4 font-medium">Total Before Discount</div>
+                                                                <div className="text-500 w-6 md:w-4 font-medium">{capitalizeWords(t("totalBeforeDiscount"))}</div>
                                                                 {/* <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1">Heat</div> */}
                                                                 <div className="w-6 md:w-4 flex justify-content-end">
                                                                     {formatNumberWithComma(generalInfo.TotalBeforeDiscount)} {' '} {`${generalInfo?.DocCurrency?.Code}`}
                                                                 </div>
                                                             </li>
                                                             <li className="flex items-center justify-between py-1.5 px-2 border-top-1 border-300 flex-wrap">
-                                                                <div className="text-500 w-6 md:w-4 font-medium">Discount</div>
+                                                                <div className="text-500 w-6 md:w-4 font-medium">{capitalizeWords(t("discount"))}</div>
                                                                 <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"><InputNumber inputId="percent" className='w-full text-right p-inputtext-sm' min={0} max={100} suffix=" %" value={generalInfo.DiscountPercent} onChange={(e) => setGeneralInfo(prev => ({ ...prev, DiscountPercent: e.value }))} />
                                                                 </div>
                                                                 <div className="w-6 md:w-4 flex justify-content-end">
@@ -3082,12 +3224,12 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                                 </div>
                                                             </li>
                                                             <li className="flex items-center justify-between py-1.5 px-2 border-top-1 border-300 flex-wrap">
-                                                                <div className="text-500 w-4 md:w-4 font-medium">Freight</div>
+                                                                <div className="text-500 w-4 md:w-4 font-medium">{capitalizeWords(t("freight"))}</div>
                                                                 <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"></div>
                                                                 <div className="w-6 md:w-4 flex justify-content-end">{formatNumberWithComma(generalInfo.FreightAmount)} {' '} {`${generalInfo?.DocCurrency?.Code}`}</div>
                                                             </li>
                                                             <li className="flex items-center justify-between py-1.5 px-2 border-top-1 border-300 flex-wrap">
-                                                                <div className="text-500 w-6 md:w-4 font-medium">Rounding</div>
+                                                                <div className="text-500 w-6 md:w-4 font-medium">{capitalizeWords(t("rounding"))}</div>
                                                                 <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"><Checkbox onChange={e => setGeneralInfo(prev => ({ ...prev, Rounding: e.checked }))} checked={generalInfo.Rounding}></Checkbox></div>
                                                                 <div className="w-6 md:w-4 flex justify-content-end">
                                                                     {
@@ -3096,12 +3238,12 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                                 </div>
                                                             </li>
                                                             <li className="flex items-center justify-between py-1.5 px-2 border-top-1 border-300 flex-wrap">
-                                                                <div className="text-500 w-4 md:w-4 font-medium">Tax</div>
+                                                                <div className="text-500 w-4 md:w-4 font-medium">{capitalizeWords(t("tax"))}</div>
                                                                 <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1"></div>
                                                                 <div className="w-6 md:w-4 flex justify-content-end">{formatNumberWithComma(generalInfo.TaxAmount)} {' '} {`${generalInfo?.DocCurrency?.Code}`}</div>
                                                             </li>
                                                             <li className="flex items-center justify-between py-1.5 px-2 border-top-1 border-300 flex-wrap">
-                                                                <div className="text-500 w-4 md:w-2 font-medium">Total</div>
+                                                                <div className="text-500 w-4 md:w-2 font-medium">{capitalizeWords(t("total"))}</div>
                                                                 <div className="text-900 w-full md:w-4 md:flex-order-0 flex-order-1 line-height-3"></div>
                                                                 <div className="w-6 md:w-4 flex justify-content-end">{formatNumberWithComma(generalInfo.TotalAmount)} {' '} {`${generalInfo?.DocCurrency?.Code}`}</div>
                                                             </li>
@@ -3119,82 +3261,82 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                             <Accordion style={{ marginTop: '1rem' }} multiple activeIndex={[]}>
                                                 <AccordionTab header={
                                                     <span className="font-bold text-md">
-                                                        Ship-to Address
+                                                        {capitalizeWords(t('shipToAddress'))}
                                                     </span>
                                                 }>
                                                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                         <div className="flex flex-column gap-2">
-                                                            <label className='font-semibold'>BP Address</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t("bpAddress"))}</label>
                                                             <Dropdown value={selectedShipToBPAddress} onChange={(e) => setSelectedShipToBPAddress(e.value)} options={shipToBPAddressOptions} optionLabel="name"
-                                                                placeholder="Select a BP address" className="w-full" />
+                                                                placeholder={t("selectBpAddress")} className="w-full" />
                                                         </div>
                                                         <div className="flex flex-column gap-2 md:col-span-2">
-                                                            <label className='font-semibold'>Address Summary</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t("addressSummary"))}</label>
                                                             <div className="flex">
                                                                 Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <div className="my-auto block">
-                                                                <Button label="Edit" icon="pi pi-pencil" size="small" onClick={() => setWhichEditAddressModalOpen("shipToEdit")} />
+                                                                <Button label={tG("edit")} icon="pi pi-pencil" size="small" onClick={() => setWhichEditAddressModalOpen("shipToEdit")} />
                                                             </div>
                                                             <div className="my-auto block">
-                                                                <Button label=" New" icon="pi pi-plus" size="small" onClick={() => setWhichEditAddressModalOpen("shipToDefine")} />
+                                                                <Button label={tG("new")} icon="pi pi-plus" size="small" onClick={() => setWhichEditAddressModalOpen("shipToDefine")} />
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </AccordionTab>
                                                 <AccordionTab header={
                                                     <span className="font-bold text-md">
-                                                        Bill-to Address
+                                                        {capitalizeWords(t('billToAddress'))}
                                                     </span>
                                                 }>
                                                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                         <div className="flex flex-column gap-2">
-                                                            <label className='font-semibold'>BP Address</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t('bpAddress'))}</label>
                                                             <Dropdown value={selectedBillToBPAddress} onChange={(e) => setSelectedBillToBPAddress(e.value)} options={billToBPAddressOptions} optionLabel="name"
-                                                                placeholder="Select a BP address" className="w-full" />
+                                                                placeholder={t("selectBpAddress")} className="w-full" />
                                                         </div>
                                                         <div className="flex flex-column gap-2 md:col-span-2">
-                                                            <label className='font-semibold'>Address Summary</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t('addressSummary'))}</label>
                                                             <div className="flex">
                                                                 Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè Test địa chỉ nè
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <div className="my-auto block">
-                                                                <Button label="Edit" icon="pi pi-pencil" size="small" onClick={() => setWhichEditAddressModalOpen("billToEdit")} />
+                                                                <Button label={tG("edit")}  icon="pi pi-pencil" size="small" onClick={() => setWhichEditAddressModalOpen("billToEdit")} />
                                                             </div>
                                                             <div className="my-auto block">
-                                                                <Button label=" New" icon="pi pi-plus" size="small" onClick={() => setWhichEditAddressModalOpen("billToDefine")} />
+                                                                <Button label={tG("new")}  icon="pi pi-plus" size="small" onClick={() => setWhichEditAddressModalOpen("billToDefine")} />
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </AccordionTab>
                                                 <AccordionTab header={
                                                     <span className="font-bold text-md">
-                                                        Preferences
+                                                        {capitalizeWords(t('preferences'))}
                                                     </span>
                                                 }>
                                                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                         <div className="flex flex-column gap-2">
-                                                            <label className='font-semibold'>Shipping Type</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t('shippingType'))}</label>
                                                             <Dropdown value={selectedCurrency} onChange={(e) => setSelectedCurrency(e.value)} options={currencyOptions} optionLabel="name"
-                                                                placeholder="Select a currency" className="w-full" />
+                                                                placeholder={t("selectCurrency")} className="w-full" />
                                                             {/* <InputText aria-describedby="price-list-help" /> */}
                                                         </div>
                                                     </div>
                                                 </AccordionTab>
                                                 <AccordionTab header={
                                                     <span className="font-bold text-md">
-                                                        Additional Information
+                                                        {capitalizeWords(t('additionalInfo'))}
                                                     </span>
                                                 }>
                                                     <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px] mt-2">
                                                         <div className="flex flex-column gap-2">
-                                                            <label className='font-semibold'>Stamp No.</label>
+                                                            <label className='font-semibold'>{capitalizeWords(t('stampNo'))}</label>
                                                             <Dropdown value={selectedCurrency} onChange={(e) => setSelectedCurrency(e.value)} options={currencyOptions} optionLabel="name"
-                                                                placeholder="Enter a stamp number" className="w-full" />
+                                                                placeholder={t("enterStampNo")} className="w-full" />
                                                             {/* <InputText aria-describedby="price-list-help" /> */}
                                                         </div>
                                                     </div>
@@ -3208,21 +3350,21 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                             </div>
                                             <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 md:grid-cols-4 p-[7px]">
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Journal Remark</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("journalRemark"))}</label>
                                                     <InputText aria-describedby="supplier-ref-no" value={generalInfo.JournalRemark} onChange={(e) => setGeneralInfo(prev => ({ ...prev, JournalRemark: e.value }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Payment Term</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("paymentTerm"))}</label>
                                                     <Dropdown loading={!dataLoaded} checkmark filter options={paymentTermOptions} value={selectedPaymentTerm} optionLabel="name"
-                                                        placeholder={!dataLoaded ? "Loading payment term... " : "Select payment term"} onChange={(e) => setSelectedPaymentTerm(e.value)} className="w-full" />
+                                                        placeholder={!dataLoaded ?  tG("loading") + ' ' + t("paymentTerm").toLocaleLowerCase() +'...' : t("selectPaymentTerm")} onChange={(e) => setSelectedPaymentTerm(e.value)} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Payment Method</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("paymentMethod"))}</label>
                                                     <Dropdown showClear loading={!dataLoaded} filter options={paymentMethodOptions} value={selectedPaymentMethod} optionLabel="PaymentMethodCode" dataKey='PaymentMethodCode'
-                                                        onChange={(e) => setSelectedPaymentMethod(e.value)} placeholder={!dataLoaded ? "Loading payment method... " : "Select payment method"} className="w-full" />
+                                                        onChange={(e) => setSelectedPaymentMethod(e.value)} placeholder={!dataLoaded ? tG("loading") + ' ' + t("paymentMethod").toLocaleLowerCase() +'...' : t("selectPaymentMethod")} className="w-full" />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Cash Discount Date Offset</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("cashDiscountDateOffset"))}</label>
                                                     <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.CashDiscountDateOffset} onChange={(e) => setGeneralInfo(prev => ({ ...prev, CashDiscountDateOffset: e.value }))} />
                                                 </div>
                                                 {/* <div className="flex flex-column gap-2">
@@ -3231,15 +3373,15 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                 onChange={(e) => setSelectedBPProject(e.value)} placeholder="Select BP project" className="w-full" />
                                         </div> */}
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Create QR Code From</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("createQRCodeFrom"))}</label>
                                                     <InputTextarea autoResize rows={2} value={generalInfo.CreateQRCodeFrom} onChange={(e) => setGeneralInfo(prev => ({ ...prev, CreateQRCodeFrom: e.target.value }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Federal Tax ID</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("federalTaxID"))}</label>
                                                     <InputText aria-describedby="federal-tax-id" value={generalInfo.FederalTaxID} onChange={(e) => setGeneralInfo(prev => ({ ...prev, FederalTaxID: e.target.value }))} />
                                                 </div>
                                                 <div className="flex flex-column gap-2">
-                                                    <label className='font-semibold'>Order Number</label>
+                                                    <label className='font-semibold'>{capitalizeWords(t("orderNumber"))}</label>
                                                     <InputNumber inputId="integeronly" className="w-full text-right p-inputtext-sm" value={generalInfo.ImportFileNum} onChange={(e) => setGeneralInfo(prev => ({ ...prev, ImportFileNum: e.value }))} />
                                                 </div>
                                                 {/* <div className="flex flex-column gap-2">
@@ -3262,7 +3404,6 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                                     chooseOptions={chooseOptions} cancelOptions={cancelOptions} />
                                             </div>
                                         </section>
-                                        <span onClick={() => console.log("j97: ", fileUploadRef.current)}>hMMM</span>
                                     </div>
                                 </div>
                             </div>
@@ -3292,49 +3433,49 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                 </div>
                                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 p-[7px]">
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Street/PO Box</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("streetPOBox"))}</label>
                                         <InputText className="p-inputtext-sm" aria-describedby="street-po-box" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Street No.</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("streetNo"))}</label>
                                         <InputText className="p-inputtext-sm" aria-describedby="street-no" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Block</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("block"))}</label>
                                         <InputText className="p-inputtext-sm" aria-describedby="block" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>City</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("city"))}</label>
                                         <InputText aria-describedby="block" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Zip Code</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("zipCode"))}</label>
                                         <InputText aria-describedby="zip-code" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>County</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("county"))}</label>
                                         <InputText aria-describedby="county" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>State</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("state"))}</label>
                                         <Dropdown showClear filter options={stateListOptions} optionLabel="name"
-                                            placeholder="Select state" className="w-full" />
+                                            placeholder={tG("selectState")} className="w-full" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Country/Region</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("country"))}/{capitalizeWords(tG("region"))}</label>
                                         <Dropdown showClear filter options={countryListOptions} optionLabel="name"
-                                            placeholder="Select country" className="w-full" />
+                                            placeholder={tG("selectCountry")} className="w-full" />
                                     </div>
                                     <div className="flex flex-column col-span-2 gap-2">
-                                        <label className='font-semibold'>Building/Floor/Room</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("building"))}/{capitalizeWords(tG("floor"))}/{capitalizeWords(tG("room"))}</label>
                                         <InputTextarea aria-describedby="building-floor-room" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Address Name 2</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("address2"))}</label>
                                         <InputText aria-describedby="address-name-2" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Address Name 3</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("address3"))}</label>
                                         <InputText aria-describedby="address-name-3" />
                                     </div>
                                     <div className="flex flex-column gap-2">
@@ -3342,12 +3483,12 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                         <InputText aria-describedby="gln" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Update Existing Rows</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("updateExistingRows"))}</label>
                                         <Dropdown showClear filter value={selectedShippedGoodsAccount} options={yesNoOption} optionLabel="name"
                                             className="w-full" />
                                     </div>
                                     <div className="flex flex-column gap-2">
-                                        <label className='font-semibold'>Update BP Master Data</label>
+                                        <label className='font-semibold'>{capitalizeWords(tG("updateBPMasterData"))}</label>
                                         <Dropdown showClear filter value={selectedShippedGoodsAccount} options={yesNoOption} optionLabel="name"
                                             className="w-full" />
                                     </div>
@@ -3355,7 +3496,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                             </Dialog>
 
                             <Dialog
-                                header={`Tuỳ chọn cột tạo `}
+                                header={capitalizeWords(t("columnDisplaySelection"))}
                                 blockScroll
                                 visible={whichColumnTableModalOpen}
                                 onHide={() => setWhichColumnTableModalOpen(null)}
@@ -3365,7 +3506,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                 <div clasName="m-0 p-2 pt-1">
                                     <div className="flex gap-2 justify-between">
                                         <span className="text-lg">{whichColumnTableModalOpen == "item" ? visibleItemColumns?.length : whichColumnTableModalOpen == "service" ? visibleServiceColumns?.length : visibleFreightColumns?.length} column(s) selected</span>
-                                        <Button label="Select All" onClick={onChangeSelectAllColumn} text disabled={whichColumnTableModalOpen == "item" ? (contentColumns?.length == visibleItemColumns?.length) : whichColumnTableModalOpen == "service" ? (serviceColumns?.length == visibleServiceColumns?.length) : freightChargesColumns?.length == visibleFreightColumns} />
+                                        <Button label={capitalizeWords(t("selectAll"))} onClick={onChangeSelectAllColumn} text disabled={whichColumnTableModalOpen == "item" ? (contentColumns?.length == visibleItemColumns?.length) : whichColumnTableModalOpen == "service" ? (serviceColumns?.length == visibleServiceColumns?.length) : freightChargesColumns?.length == visibleFreightColumns} />
                                     </div>
                                     <ListBox
                                         filter
@@ -3384,7 +3525,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                 visible={itemServiceWarningVisible}
                                 onHide={() => setItemServiceWarningVisible(false)}
                                 message={tM("changeType")}
-                                header="Confirmation"
+                                header={capitalizeWords(tG("confirmation"))}
                                 icon="pi pi-exclamation-triangle"
                                 accept={() => acceptChangeItemServiceType(documentTypeOptions.find(type => type.code != selectedDocType.code))}
                             />
@@ -3393,7 +3534,7 @@ const CCreateGoodsReceiptPO = ({ initialData, messages }) => {
                                 visible={savingConfirmVisible}
                                 onHide={() => setSavingConfirmVisible(false)}
                                 message={tM("save")}
-                                header="Confirmation"
+                                header={capitalizeWords(tG("confirmation"))}
                                 icon="pi pi-exclamation-triangle"
                                 accept={() => handleAddAndView()}
                             />

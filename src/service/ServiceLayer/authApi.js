@@ -21,6 +21,7 @@
 // /service/ServiceLayer/authApi.js
 
 const baseURL = `${process.env.NEXT_PUBLIC_SERVICE_LAYER_URL}/${process.env.NEXT_PUBLIC_ODATA_VERSION}`;
+// const baseURL = `https://crm-grantthornton.com:50000/b1s/${process.env.NEXT_PUBLIC_ODATA_VERSION}`;
 
 const usersApi = {
     login: async (company, username, password) => {
@@ -39,6 +40,8 @@ const usersApi = {
                 Password: password,
             }),
         });
+
+        console.log("haiz:", response)
 
         // if (!response.ok) {
         // throw new Error(`HTTP error! status: ${response.status}`);

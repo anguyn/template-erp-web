@@ -44,6 +44,31 @@ const AppTopbar = forwardRef((props, ref) => {
         }
     }
 
+    const toggleFullScreen = () => {
+        if (!isFullScreen) {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+            } else if (document.documentElement.mozRequestFullScreen) { /* Firefox */
+                document.documentElement.mozRequestFullScreen();
+            } else if (document.documentElement.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+                document.documentElement.webkitRequestFullscreen();
+            } else if (document.documentElement.msRequestFullscreen) { /* IE/Edge */
+                document.documentElement.msRequestFullscreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.mozCancelFullScreen) { /* Firefox */
+                document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) { /* IE/Edge */
+                document.msExitFullscreen();
+            }
+        }
+        setIsFullScreen(!isFullScreen);
+    };
+
     const items = [
         {
             label: 'Options',
@@ -80,6 +105,10 @@ const AppTopbar = forwardRef((props, ref) => {
 
     const backPreviousPage = () => {
         router.back();
+    }
+
+    const reloadPage = () => {
+        router.reload();
     }
 
     useImperativeHandle(ref, () => ({
@@ -124,13 +153,32 @@ const AppTopbar = forwardRef((props, ref) => {
                     <button
                         ref={topbarbackbuttonRef}
                         type="button"
-                        className="p-link layout-menu-button layout-topbar-button"
+                        className="p-link layout-menu-button layout-topbar-button ml-1"
                         onClick={backPreviousPage}
                     >
                         <i className="pi pi-arrow-circle-left" />
                     </button>
                 )
             }
+
+            <button
+                // ref={topbarreloadbuttonRef}
+                type="button"
+                className="p-link layout-menu-button layout-topbar-button ml-1"
+                onClick={reloadPage}
+            >
+                <i className="pi pi-refresh" />
+            </button>
+
+            <button
+                // ref={topbarreloadbuttonRef}
+                type="button"
+                className="p-link layout-menu-button layout-topbar-button ml-1"
+                onClick={toggleFullScreen}
+            >
+                <i className="pi pi-window-maximize" />
+            </button>
+
 
             <div
                 ref={topbarmenuRef}

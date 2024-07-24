@@ -15,12 +15,17 @@ export default async function handler(req, res) {
         try {
             const loginResponse = await usersApi.login(company, username, password);
 
+            // console.log("Login lại dì nữa:" , await loginResponse.json());
+            // return;
             // Convert the headers to a plain object
             const headers = loginResponse.headers;
 
             // Iterate over the headers map to get the 'set-cookie' header
-            const headersMap = new Map(headers.entries());
-            const setCookieHeaders = headersMap.get('set-cookie') || headersMap.get('Set-Cookie') || [];
+            const setCookieHeaders = loginResponse.headers.get('set-cookie');
+
+            // const headersMap = new Map(headers.entries());
+            console.log("Individual Cookies: ", setCookieHeaders);
+            // const setCookieHeaders = headersMap.get('set-cookie') || headersMap.get('Set-Cookie') || [];
 
             // console.log("Set-Cookie Header: ", setCookieHeaders);
 
@@ -32,7 +37,6 @@ export default async function handler(req, res) {
                 cookieString.split(/,(?=[^;]*;)/) // Split by comma not followed by a semicolon
             );
 
-            // console.log("Individual Cookies: ", individualCookies);
 
             // Initialize variables to hold cookies
             let b1sessionCookie;
@@ -85,6 +89,7 @@ export default async function handler(req, res) {
             // Respond with the login response status and data
             res.status(loginResponse.status).json(data);
         } catch (error) {
+            // const errorData = await error.json();
             console.error('Error logging in:', error);
             // Respond with the error status and message
             res.status(error.response?.status || 500).json({ message: error.message });

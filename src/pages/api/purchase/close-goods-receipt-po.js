@@ -11,13 +11,23 @@ export default async function handler(req, res) {
             const { id } = query;
 
             if (!id) {
-                return res.status(400).json({ message: 'ID is required' });
+                return res.status(400).json({
+                    error: {
+                        code: -1,
+                        value: 'ID is required'
+                    }
+                });
             }
 
             const response = await purchaseApi.closeGoodReceiptPO(id, cookies);
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorData = await response.json();
+                throw { status: response.status, body: errorData.error };
+            }
+
+            if (response.status === 204) {
+                return res.status(204).end(); 
             }
 
             const data = await response.json();
@@ -25,7 +35,7 @@ export default async function handler(req, res) {
             res.status(response.status).json(data);
         } catch (error) {
             console.error('Error fetching data:', error);
-            res.status(error.response?.status || 500).json({ message: error.message });
+            res.status(error.status || 500).json({ error: error.body });
         }
     } else {
         res.setHeader('Allow', ['POST']);

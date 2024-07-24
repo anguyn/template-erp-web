@@ -8,8 +8,10 @@ import { InputText } from 'primereact/inputtext';
 import { FilterMatchMode, FilterService } from 'primereact/api'
 import { nanoid } from 'nanoid';
 import toast from 'react-hot-toast';
+import { useTranslations } from 'next-intl';
 
 import { formatNumberWithComma } from '@/utils/number';
+import { capitalizeWords } from '@/utils/text';
 
 const SELECT = ["AttachmentEntry", "DefaultWarehouse", "ItemCode", "ItemClass", "ItemName", "ForeignName",
     "ItemWarehouseInfoCollection", "ItemPrices", "IssueMethod", "ItemType", "ItemDistributionRules", "Picture",
@@ -26,6 +28,9 @@ const ItemList = (props) => {
     const controller = new AbortController();
     const signal = controller.signal;
 
+    const tD = useTranslations("Dialog");
+    const tG = useTranslations("General");
+
     const [dataList, setDataList] = useState(itemList || [])
     const [globalFilterValue, setGlobalFilterValue] = useState('');
     const [loading, setLoading] = useState(false);
@@ -35,7 +40,7 @@ const ItemList = (props) => {
     });
 
     const handleConfirmModal = () => {
-        toast.success("Confirm");
+        // toast.success("Confirm");
         // const choosenItem = { ...selectedItem };
         console.log([...selectedItem])
         setItem([...selectedItem]);
@@ -60,7 +65,7 @@ const ItemList = (props) => {
                 <Button disabled={loading} icon="pi pi-refresh" rounded raised onClick={handleRefresh} />
                 <span className="p-input-icon-left">
                     <i className="pi pi-search" />
-                    <InputText value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
+                    <InputText value={globalFilterValue} onChange={onGlobalFilterChange} placeholder={capitalizeWords(tG("keywordSearch"))} />
                 </span>
             </div>
         );
@@ -70,11 +75,11 @@ const ItemList = (props) => {
         return (
             <div className='flex gap-4 items-center'>
                 <div className='flex gap-2 items-center'>
-                    <span><b>Total Selected</b></span>
+                    <span><b>{capitalizeWords(tD("totalSelected"))}</b></span>
                     <Badge className='text-base' severity="success" value={selectedItem?.length || 0}></Badge>
                 </div>
                 <div className='flex gap-2 items-center'>
-                    <span><b>Total Item</b></span>
+                    <span><b>{capitalizeWords(tD("totalItem"))}</b></span>
                     <Badge className='text-base' value={dataList?.length || 0}></Badge>
                 </div>
             </div>
@@ -84,8 +89,8 @@ const ItemList = (props) => {
     const renderDFooter = () => {
         return (
             <div>
-                <Button label="Cancel" icon="pi pi-times" onClick={handleHideModal} className="p-button-text" />
-                <Button label="Choose" disabled={selectedItem?.length <= 0} icon="pi pi-check" onClick={handleConfirmModal} autoFocus />
+                <Button label={tG("cancel")} icon="pi pi-times" onClick={handleHideModal} className="p-button-text" />
+                <Button label={tG("choose")} disabled={selectedItem?.length <= 0} icon="pi pi-check" onClick={handleConfirmModal} autoFocus />
             </div>
         )
     };
@@ -257,7 +262,7 @@ const ItemList = (props) => {
         } catch (error) {
             if (error.name !== 'AbortError') {
                 console.error(error);
-                toast.error("Có lỗi khi lấy dữ liệu.");
+                // toast.error("Có lỗi khi lấy dữ liệu.");
             }
         } finally {
             // if (itemList?.length >= itemCount || itemCount <= 1000) {
@@ -285,7 +290,7 @@ const ItemList = (props) => {
 
     return (
         <Dialog
-            header="Select Item"
+            header={capitalizeWords(tD("selectItem"))}
             visible={itemSelectModalOpen}
             onHide={handleHideModal}
             maximizable
@@ -319,10 +324,10 @@ const ItemList = (props) => {
                 >
                     <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
                     <Column headerStyle={{ width: '3rem' }} body={(rowData, row) => (<>{row.rowIndex + 1}</>)}></Column>
-                    <Column field="ItemCode" header="Item Code"></Column>
-                    <Column field="ItemName" header="Item Name"></Column>
-                    <Column field="ItemClass" header="Item Class" body={(rowData) => (<>{rowData.ItemClass.substring(3)}</>)}></Column>
-                    <Column field="QuantityOnStock" header="On Stock" body={(rowData) => (<>{formatNumberWithComma(rowData.QuantityOnStock)}</>)}></Column>
+                    <Column field="ItemCode" header={capitalizeWords(tD("itemCode"))}></Column>
+                    <Column field="ItemName" header={capitalizeWords(tD("itemName"))}></Column>
+                    <Column field="ItemClass" header={capitalizeWords(tD("itemClass"))} body={(rowData) => (<>{rowData.ItemClass.substring(3)}</>)}></Column>
+                    <Column field="QuantityOnStock" header={capitalizeWords(tD("onStock"))} body={(rowData) => (<>{formatNumberWithComma(rowData.QuantityOnStock)}</>)}></Column>
                 </DataTable>
             </div>
         </Dialog>

@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import React, { useCallback, useState, useEffect, useRef, useMemo, lazy } from 'react';
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/router';
 import { useTranslations } from 'next-intl';
 import { nanoid } from 'nanoid';
 import { Button } from 'primereact/button';
@@ -23,13 +23,13 @@ import { shallow } from 'zustand/shallow';
 
 import withAuth from '@/utils/withAuth';
 import toast from 'react-hot-toast';
+import Loader from '../Loader';
 
 import { isoToDateFormat, convertToISO } from '@/utils/date';
 import { formatNumberWithComma } from '@/utils/number';
 import { capitalizeWords } from '@/utils/text';
 import { InputNumber } from 'primereact/inputnumber';
-import GRPOHelper from '../Dialog/Helpers/GoodsReceiptPO';
-import Loader from '../Loader';
+// import DHelper from '../Dialog/Helpers/Delivery';
 
 const DOCUMENT_STATUS = {
     'bost_Open': 'Open',
@@ -127,7 +127,7 @@ FilterService.register('custom_DocDueDate', (value, filters) => {
     return fromDate <= dateValue && dateValue <= toDate;
 });
 
-const CGoodsReceiptPOList = ({ initialData }) => {
+const CDeliveryList = ({ initialData }) => {
     const router = useRouter();
     const { locale } = router;
     const { layoutConfig } = useLayoutStore(
@@ -136,7 +136,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
     );
     // const pageListStyle = layoutConfig?.pageListStyle;
 
-    const t = useTranslations('GoodsReceiptPOList');
+    const t = useTranslations('DeliveryList');
     const tG = useTranslations('General');
     const tM = useTranslations('Messages');
 
@@ -150,8 +150,8 @@ const CGoodsReceiptPOList = ({ initialData }) => {
     const [filterOptions, setFilterOptions] = useState([
         { name: 'Search', code: 'search', selected: true },
         { name: 'Document No.', code: 'docNo', selected: true },
-        { name: 'Supplier Code', code: 'supplierCode', selected: true },
-        { name: 'Supplier Name', code: 'supplierName', selected: true },
+        { name: 'Customer Code', code: 'supplierCode', selected: true },
+        { name: 'Customer Name', code: 'supplierName', selected: true },
         { name: 'Posting Date', code: 'postingDate', selected: false },
         { name: 'Due Date', code: 'dueDate', selected: true },
         { name: 'Sales Employee Name', code: 'salesEmployeeName', selected: true },
@@ -163,7 +163,6 @@ const CGoodsReceiptPOList = ({ initialData }) => {
     ]);
     const [selectionAll, setSelectionAll] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
-
 
     // Template
     const codeBodyTemplate = (rowData) => {
@@ -216,7 +215,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
     const actionBodyTemplate = (rowData) => {
         return (
             <>
-                <Button link onClick={() => router.push(`/purchasing/goods-receipt-po/${rowData.DocEntry}`)} icon="pi pi-eye" rounded aria-label="View" />
+                <Button link onClick={() => router.push(`/sales/delivery/${rowData.DocEntry}`)} icon="pi pi-eye" rounded aria-label="View" />
             </>
         )
     };
@@ -256,12 +255,8 @@ const CGoodsReceiptPOList = ({ initialData }) => {
     };
 
     const stringRowFilterTemplate = (options) => {
-        const handleChange = async (e) => {
-            const newValue = e.target.value;
-            options.filterApplyCallback(newValue)
-        };
         return (
-            <InputText value={options.value} onChange={handleChange} />
+            <InputText value={options.value} onChange={(e) => { options.filterApplyCallback(e.target.value) }} />
         );
     };
 
@@ -282,13 +277,13 @@ const CGoodsReceiptPOList = ({ initialData }) => {
         );
     };
 
-    const [goodsReceiptPOData, setGoodsReceiptPOData] = useState([]);
+    const [deliveryData, setDeliveryData] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [exampleData, setExampleData] = useState([]);
 
     // useMemo
-    // const goodsReceiptPOColumns =
-    const goodsReceiptPOColumns = useMemo(
+    // const deliveryColumns =
+    const deliveryColumns = useMemo(
         () =>
             [
                 {
@@ -504,21 +499,21 @@ const CGoodsReceiptPOList = ({ initialData }) => {
             <div className="flex align-items-center">
                 <div className="ml-2">{layoutConfig.pageListStyle == "scroll" ? tM("tip1") : tM("tip2")}</div>
             </div>
-        ), [layoutConfig?.pageListStyle, locale]
+        ), [layoutConfig?.pageListStyle]
     );
 
-    const [grFilters, setGRFilters] = useState(null);
+    const [deliveryFilters, setDeliveryFilters] = useState(null);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-    const [selectedGoodsReceiptPO, setSelectedGoodsReceiptPO] = useState([]);
+    const [selectedDelivery, setSelectedDelivery] = useState(null);
     const [searchInput, setSearchInput] = useState('');
     const [menuIsOpen, setMenuIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [globalFilterValue, setGlobalFilterValue] = useState('');
-    const [visibleGRColumns, setVisibleGRColumns] = useState([]);
+    const [visibleDColumns, setVisibleDColumns] = useState([]);
     const [lazyState, setLazyState] = useState(defaultLazyState);
     const exportMenu = useRef(null);
-    const goodsReceiptPOT = useRef(null);
+    const deliveryT = useRef(null);
     const filterListRef = useRef(null);
 
     const onPageChange = (e) => {
@@ -528,9 +523,9 @@ const CGoodsReceiptPOList = ({ initialData }) => {
 
     const markNavigatedRow = useCallback(
         (row) => {
-            return selectedGoodsReceiptPO?.id === row.id;
+            return selectedDelivery?.id === row.id;
         },
-        [selectedGoodsReceiptPO]
+        [selectedDelivery]
     );
 
     const onGlobalFilterChange = (e) => {
@@ -543,7 +538,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
             setLazyState(prev => ({ ...prev, filters: _filters }));
         }
         else {
-            setGRFilters((prevFilters) => ({
+            setDeliveryFilters((prevFilters) => ({
                 ...prevFilters,
                 global: {
                     ...prevFilters.global,
@@ -560,9 +555,9 @@ const CGoodsReceiptPOList = ({ initialData }) => {
 
     const onColumnToggle = (e) => {
         let selectedColumns = e.value;
-        let orderedSelectedColumns = goodsReceiptPOColumns.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
+        let orderedSelectedColumns = deliveryColumns.filter((col) => selectedColumns.some((sCol) => sCol.field === col.field));
 
-        setVisibleGRColumns(orderedSelectedColumns);
+        setVisibleDColumns(orderedSelectedColumns);
     };
 
     const onSelectAllChange = (event) => {
@@ -571,11 +566,11 @@ const CGoodsReceiptPOList = ({ initialData }) => {
         if (selectAll) {
             //   CustomerService.getCustomers().then((data) => {
             setSelectionAll(true);
-            setSelectedGoodsReceiptPO(goodsReceiptPOData);
+            // setSelectedDelivery(data.customers);
             //   });
         } else {
             setSelectionAll(false);
-            setSelectedGoodsReceiptPO([]);
+            setSelectedDelivery([]);
         }
     };
 
@@ -596,7 +591,6 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                         className="h-[2.8rem]"
                         // size="small"
                         onClick={handleRefresh}
-                    // onClick={() => { console.log("Ref nè m: ", goodsReceiptPOT.current) }}
                     />
                     <Button
                         type="button"
@@ -608,7 +602,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                         onClick={() => setIsFilterModalOpen(true)}
                     />
 
-                    {/* <MultiSelect value={visibleGRColumns} options={goodsReceiptPOColumns} optionLabel="header" onChange={onColumnToggle} className="p-inputtext-sm w-full sm:w-20rem text-sm" display="chip" /> */}
+                    {/* <MultiSelect value={visibleDColumns} options={deliveryColumns} optionLabel="header" onChange={onColumnToggle} className="p-inputtext-sm w-full sm:w-20rem text-sm" display="chip" /> */}
                 </div>
                 <span className="p-input-icon-left">
                     <i className="pi pi-search" />
@@ -628,31 +622,29 @@ const CGoodsReceiptPOList = ({ initialData }) => {
         () => {
             return (
                 <div className='flex flex-col sm:flex-row gap-3 sm:justify-between py-2'>
-                    <span>{tG("selectingQuantity", { quantity: selectionAll ? totalRecord : selectedGoodsReceiptPO?.length || 0 })}</span>
                     <span>{tG("displayQuantity", { from: lazyState?.first + 1, to: lazyState?.first + 100, amount: totalRecord })}</span>
+                    <span>{tG("defaultPageNumber", { pageNumber: lazyState?.rows })}</span>
                 </div>
             )
-        }, [lazyState, totalRecord, selectionAll, selectedGoodsReceiptPO]
+        }, [lazyState, totalRecord]
     )
     const sFooter = useMemo(
         () => {
             return (
-                <div className='flex flex-col sm:flex-row gap-3 justify-between py-2'>
-                    <span>{tG("selectingQuantity", { quantity: selectionAll ? totalRecord : selectedGoodsReceiptPO?.length || 0 })}</span>
+                <div className='flex flex-col sm:flex-row gap-3 justify-center py-2'>
                     <span>{tG("displayCurrentQuantity", { current: filteredData?.length, amount: totalRecord })}</span>
                 </div>
             )
-        }, [filteredData, totalRecord, selectionAll, selectedGoodsReceiptPO]
+        }, [filteredData, totalRecord]
     )
 
     const header = renderHeader();
-
     // const pFooter = renderPFooter;
     // const sFooter = renderSFooter;
 
     // Export Functions
     const exportCsv = () => {
-        if (!selectionAll && selectedGoodsReceiptPO?.length == 0) {
+        if (!selectionAll && selectedDelivery?.length == 0) {
             toast(tM("chooseExportData"));
             return;
         }
@@ -662,7 +654,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                 if (layoutConfig.pageListStyle == "pagination" && selectionAll) {
                     try {
                         setIsExporting(true);
-                        const goodsReceiptPOList = await fetch('http://localhost:3000/api/purchase/get-all-goods-receipt-po', {
+                        const deliveryList = await fetch('http://localhost:3000/api/sales/get-all-delivery', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -671,11 +663,11 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                             credentials: 'include'
                         });
 
-                        const data = await goodsReceiptPOList.json();
+                        const data = await deliveryList.json();
 
                         csvData = data?.value?.map(row => {
                             let csvRow = {};
-                            goodsReceiptPOColumns.forEach(col => {
+                            deliveryColumns.forEach(col => {
                                 csvRow[col.header] = row[col.field];
                             });
                             return csvRow;
@@ -686,9 +678,9 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                         setIsExporting(false);
                     }
                 } else {
-                    csvData = selectedGoodsReceiptPO.map(row => {
+                    csvData = selectedDelivery.map(row => {
                         let csvRow = {};
-                        goodsReceiptPOColumns.forEach(col => {
+                        deliveryColumns.forEach(col => {
                             csvRow[col.header] = row[col.field];
                         });
                         return csvRow;
@@ -701,13 +693,13 @@ const CGoodsReceiptPOList = ({ initialData }) => {
 
                 const today = new Date();
                 const formattedDate = today.toISOString().split('T')[0];
-                FileSaver.saveAs(blob, `Goods-Receipt-PO-${formattedDate}.csv`);
+                FileSaver.saveAs(blob, `Delivery-${formattedDate}.csv`);
             });
         });
     };
 
     const exportPdf = () => {
-        if (!selectionAll && selectedGoodsReceiptPO?.length == 0) {
+        if (!selectionAll && selectedDelivery?.length == 0) {
             toast(tM("chooseExportData"));
             return;
         }
@@ -723,7 +715,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                 if (layoutConfig.pageListStyle == "pagination" && selectionAll) {
                     try {
                         setIsExporting(true);
-                        const goodsReceiptPOList = await fetch('http://localhost:3000/api/purchase/get-all-goods-receipt-po', {
+                        const deliveryList = await fetch('http://localhost:3000/api/sales/get-all-delivery', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -732,38 +724,38 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                             credentials: 'include'
                         });
 
-                        const data = await goodsReceiptPOList.json();
+                        const data = await deliveryList.json();
 
-                        doc.autoTable(goodsReceiptPOColumns.map((col) => ({ title: col.header, dataKey: col.field })), data?.value);
+                        doc.autoTable(deliveryColumns.map((col) => ({ title: col.header, dataKey: col.field })), data?.value);
                     } catch (error) {
                         toast(tM("errorOccured"));
                     } finally {
                         setIsExporting(false);
                     }
                 } else {
-                    doc.autoTable(goodsReceiptPOColumns.map((col) => ({ title: col.header, dataKey: col.field })), selectedGoodsReceiptPO);
+                    doc.autoTable(deliveryColumns.map((col) => ({ title: col.header, dataKey: col.field })), selectedDelivery);
                 }
                 const today = new Date();
                 const formattedDate = today.toISOString().split('T')[0];
-                doc.save(`Goods-Receipt-PO-${formattedDate}.pdf`);
+                doc.save(`Delivery-${formattedDate}.pdf`);
             });
         });
     };
 
     const exportExcel = () => {
-        if (!selectionAll && selectedGoodsReceiptPO?.length == 0) {
+        if (!selectionAll && selectedDelivery?.length == 0) {
             toast(tM("chooseExportData"));
             return;
         }
         import('xlsx').then(async (xlsx) => {
-            const header = goodsReceiptPOColumns.map(col => col.header);
+            const header = deliveryColumns.map(col => col.header);
 
             let data;
 
             if (layoutConfig.pageListStyle == "pagination" && selectionAll) {
                 try {
                     setIsExporting(true);
-                    const goodsReceiptPOList = await fetch('http://localhost:3000/api/purchase/get-all-goods-receipt-po', {
+                    const deliveryList = await fetch('http://localhost:3000/api/sales/get-all-delivery', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -772,10 +764,10 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                         credentials: 'include'
                     });
 
-                    const result = await goodsReceiptPOList.json();
+                    const result = await deliveryList.json();
 
                     data = result?.value.map(item =>
-                        goodsReceiptPOColumns.reduce((acc, col) => {
+                        deliveryColumns.reduce((acc, col) => {
                             acc[col.header] = item[col.field];
                             return acc;
                         }, {})
@@ -786,8 +778,8 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                     setIsExporting(false);
                 }
             } else {
-                data = selectedGoodsReceiptPO.map(item =>
-                    goodsReceiptPOColumns.reduce((acc, col) => {
+                data = selectedDelivery.map(item =>
+                    deliveryColumns.reduce((acc, col) => {
                         acc[col.header] = item[col.field];
                         return acc;
                     }, {})
@@ -803,18 +795,18 @@ const CGoodsReceiptPOList = ({ initialData }) => {
             const today = new Date();
             const formattedDate = today.toISOString().split('T')[0];
 
-            saveAsExcelFile(excelBuffer, `Goods-Receipt-PO-${formattedDate}`);
+            saveAsExcelFile(excelBuffer, `Delivery-${formattedDate}`);
         });
     };
 
     const exportDocx = () => {
-        if (!selectionAll && selectedGoodsReceiptPO?.length == 0) {
+        if (!selectionAll && selectedDelivery?.length == 0) {
             toast(tM("chooseExportData"));
             return;
         }
         import('docx').then(({ Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun }) => {
             import('file-saver').then(async ({ default: FileSaver }) => {
-                const headerCells = goodsReceiptPOColumns.map(col => new TableCell({
+                const headerCells = deliveryColumns.map(col => new TableCell({
                     children: [new Paragraph({ children: [new TextRun({ text: col.header, bold: true })] })],
                     shading: { fill: 'D9EAD3' }
                 }));
@@ -823,7 +815,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                 if (layoutConfig.pageListStyle == "pagination" && selectionAll) {
                     try {
                         setIsExporting(true);
-                        const goodsReceiptPOList = await fetch('http://localhost:3000/api/purchase/get-all-goods-receipt-po', {
+                        const deliveryList = await fetch('http://localhost:3000/api/sales/get-all-delivery', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -832,11 +824,11 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                             credentials: 'include'
                         });
 
-                        const result = await goodsReceiptPOList.json();
+                        const result = await deliveryList.json();
 
                         dataRows = result?.value.map(row =>
                             new TableRow({
-                                children: goodsReceiptPOColumns.map(col =>
+                                children: deliveryColumns.map(col =>
                                     new TableCell({
                                         children: [
                                             new Paragraph({
@@ -854,9 +846,9 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                     }
 
                 } else {
-                    dataRows = selectedGoodsReceiptPO.map(row =>
+                    dataRows = selectedDelivery.map(row =>
                         new TableRow({
-                            children: goodsReceiptPOColumns.map(col =>
+                            children: deliveryColumns.map(col =>
                                 new TableCell({
                                     children: [
                                         new Paragraph({
@@ -886,7 +878,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                 const formattedDate = today.toISOString().split('T')[0];
 
                 Packer.toBlob(doc).then(blob => {
-                    FileSaver.saveAs(blob, `Goods-Receipt-PO-${formattedDate}.docx`);
+                    FileSaver.saveAs(blob, `Delivery-${formattedDate}.docx`);
                 }).catch(error => {
                     console.error('Error exporting DOCX:', error);
                 });
@@ -896,7 +888,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
     };
 
     const saveAsExcelFile = (buffer, fileName) => {
-        if (!selectionAll && selectedGoodsReceiptPO?.length == 0) {
+        if (!selectionAll && selectedDelivery?.length == 0) {
             toast(tM("chooseExportData"));
             return;
         }
@@ -914,7 +906,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
     };
 
     const exportJson = () => {
-        if (!selectionAll && selectedGoodsReceiptPO?.length == 0) {
+        if (!selectionAll && selectedDelivery?.length == 0) {
             toast(tM("chooseExportData"));
             return;
         }
@@ -927,7 +919,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                 if (layoutConfig.pageListStyle == "pagination" && selectionAll) {
                     try {
                         setIsExporting(true);
-                        const goodsReceiptPOList = await fetch('http://localhost:3000/api/purchase/get-all-goods-receipt-po', {
+                        const deliveryList = await fetch('http://localhost:3000/api/sales/get-all-delivery', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -936,7 +928,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                             credentials: 'include'
                         });
 
-                        const result = await goodsReceiptPOList.json();
+                        const result = await deliveryList.json();
 
                         data = result?.value;
 
@@ -947,13 +939,13 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                     }
 
                 } else {
-                    data = selectedGoodsReceiptPO;
+                    data = selectedDelivery;
                 }
                 const jsonData = JSON.stringify(data);
                 const blob = new Blob([jsonData], { type: 'application/json;charset=utf-8' });
                 const today = new Date();
                 const formattedDate = today.toISOString().split('T')[0];
-                saveAs(blob, `Goods-Receipt-PO-${formattedDate}.json`);
+                saveAs(blob, `Delivery-${formattedDate}.json`);
             }
         });
     }
@@ -1025,22 +1017,22 @@ const CGoodsReceiptPOList = ({ initialData }) => {
     useEffect(() => {
         // if (layoutConfig?.pageListStyle == 'scroll') loadLazyData();
         loadLazyData()
-        // initGRFilters();
-        setVisibleGRColumns(goodsReceiptPOColumns)
+        // initDeliveryFilters();
+        setVisibleDColumns(deliveryColumns)
     }, []);
 
     useEffect(() => {
-        setVisibleGRColumns(prevColumns =>
+        setVisibleDColumns(prevColumns =>
             prevColumns.map(col => {
-                const updatedCol = goodsReceiptPOColumns.find(gc => gc.field === col.field);
+                const updatedCol = deliveryColumns.find(gc => gc.field === col.field);
                 return updatedCol ? { ...col, header: updatedCol.header, filterElement: updatedCol.filterElement } : col;
             })
         );
-    }, [goodsReceiptPOColumns]);
+    }, [deliveryColumns]);
 
     useEffect(() => {
-        if (selectionAll) setSelectedGoodsReceiptPO(goodsReceiptPOData);
-    }, [goodsReceiptPOData]);
+        if (selectionAll) setSelectedDelivery(deliveryData);
+    }, [deliveryData]);
 
     const handlePageChange = (event) => {
         // console.log('Page Change Event:', event);
@@ -1070,7 +1062,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
             try {
                 setExampleData(Array.from({ length: 20 }, (_, index) => index))
                 setLoading(true);
-                goodsReceiptPOT.current.clearState();
+                deliveryT.current.clearState();
                 const { first, rows, page, sortField, sortOrder, filters } = lazyState;
                 const payload = {
                     top: [lazyState.rows || 100],
@@ -1142,7 +1134,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
 
                 console.log("payload của mẹ: ", payload)
 
-                networkTimeout = await fetch('http://localhost:3000/api/purchase/get-all-goods-receipt-po', {
+                networkTimeout = await fetch('http://localhost:3000/api/sales/get-all-delivery', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1156,13 +1148,13 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                 console.log("Haizz: ", data)
 
                 setTotalRecord(data?.['odata.count']);
-                setGoodsReceiptPOData(data?.value);
+                setDeliveryData(data?.value);
             } catch (error) {
                 console.error(error);
                 toast.error(error);
             } finally {
                 setLoading(false);
-                setGRFilters(defaultFilter);
+                setDeliveryFilters(defaultFilter);
                 setExampleData([])
             }
         })()
@@ -1179,14 +1171,14 @@ const CGoodsReceiptPOList = ({ initialData }) => {
     return (
         <>
             <Head>
-                <title>{capitalizeWords(t('goodsReceiptPOList'))}</title>
+                <title>{capitalizeWords(t('deliveryList'))}</title>
                 <meta name="viewport" content="initial-scale=1.0, width=device-width" />
             </Head>
             <div id="custom-section" className="flex flex-col relative" >
                 <div className="w-full">
                     <div className="card p-2 sm:p-4 relative">
                         <div className='flex gap-4 items-center'>
-                            <h3 className='m-0'>{capitalizeWords(t('goodsReceiptPOList'))}</h3>
+                            <h3 className='m-0'>{capitalizeWords(t('deliveryList'))}</h3>
                             <Chip label={`${totalRecord} ${totalRecord > 1 ? t("documents").toLowerCase() : t("document").toLowerCase()}`} />
                         </div>
                         <Button className="absolute top-1 right-1 scale-75 sm:scale-50" icon="pi pi-question" rounded outlined size="small" severity="secondary" aria-label="Helper" onClick={() => setIsHelperOpen(true)} />
@@ -1214,7 +1206,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                             filterOptions.find(option => option.code === 'supplierCode')?.selected && (
                                 <div className="flex flex-column gap-2">
                                     <label className="font-semibold">{capitalizeWords(tG("supplierCode"))}</label>
-                                    <InputText placeholder={tG("enterSupplierCode")} className="p-inputtext-sm text-base" />
+                                    <InputText placeholder={tG("enterCustomerCode")} className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -1223,7 +1215,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                             filterOptions.find(option => option.code === 'supplierName')?.selected && (
                                 <div className="flex flex-column gap-2">
                                     <label className="font-semibold">{capitalizeWords(tG("supplierName"))}</label>
-                                    <InputText placeholder={tG("enterSupplierName")} className="p-inputtext-sm text-base" />
+                                    <InputText placeholder={tG("enterCustomerName")} className="p-inputtext-sm text-base" />
                                 </div>
                             )
                         }
@@ -1298,7 +1290,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                                     label={capitalizeWords(tG("create"))}
                                     severity="create"
                                     outlined
-                                    onClick={() => router.push('/purchasing/goods-receipt-po/create')}
+                                    onClick={() => router.push('/sales/delivery/create')}
                                 />
                             </div>
                             <div className="">
@@ -1358,7 +1350,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                                 //         filterDisplay="row"
                                 //         responsiveLayout="scroll"
                                 //         sortMode="multiple"
-                                //         filters={grFilters}
+                                //         filters={deliveryFilters}
                                 //         removableSort
                                 //         emptyMessage={capitalizeWords(t("empty"))}
                                 //         header={header}
@@ -1367,7 +1359,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                                 //         <Column key={nanoid(6)} columnKey={nanoid(6)} body={loadingItemTemplate} headerStyle={{ width: '3rem' }}></Column>
                                 //         <Column key={nanoid(6)} columnKey={nanoid(6)} body={loadingItemTemplate} header={capitalizeWords(tG("actions"))} headerStyle={{ width: '3rem' }} className='text-center' />
                                 //         {
-                                //             visibleGRColumns && visibleGRColumns.length > 0 && visibleGRColumns.map((col, idx) => (
+                                //             visibleDColumns && visibleDColumns.length > 0 && visibleDColumns.map((col, idx) => (
                                 //                 <Column
                                 //                     key={nanoid(6)}
                                 //                     columnKey={nanoid(6)}
@@ -1381,23 +1373,23 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                                 // ) :
                                 (layoutConfig?.pageListStyle == 'pagination') ? (
                                     <DataTable
-                                        ref={goodsReceiptPOT}
+                                        ref={deliveryT}
                                         lazy
                                         scrollable
                                         scrollHeight='600px'
                                         totalRecords={totalRecord || initialData?.count}
-                                        id="goods-receipt-po-table"
-                                        value={goodsReceiptPOData}
+                                        id="delivery-table"
+                                        value={deliveryData}
                                         className="p-datatable-gridlines"
                                         paginator
                                         showGridlines
-                                        rows={100}
+                                        rows={2}
                                         rowsPerPageOptions={[10, 20, 50, 100, 200]}
                                         selectionMode={'checkbox'}
-                                        selection={selectedGoodsReceiptPO}
+                                        selection={selectedDelivery}
                                         onSelectionChange={(e) => {
                                             const currentValue = e.value;
-                                            setSelectedGoodsReceiptPO(currentValue)
+                                            setSelectedDelivery(currentValue)
                                             setSelectionAll(currentValue.length === totalRecord)
                                         }}
                                         onPage={handlePageChange}
@@ -1421,15 +1413,14 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                                         sortMode="single"
                                         removableSort
                                         emptyMessage={capitalizeWords(t("empty"))}
-                                        // header={header}
-                                        header={renderHeader}
+                                        header={header}
                                         footer={pFooter}
                                         reorderableColumns
                                     >
                                         <Column key={nanoid(6)} columnKey={nanoid(6)} resizeable={false} reorderable={false} frozen selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
                                         <Column key={nanoid(6)} columnKey={nanoid(6)} resizeable={false} reorderable={false} frozen header={capitalizeWords(tG("actions"))} headerStyle={{ width: '3rem' }} body={actionBodyTemplate} />
                                         {
-                                            visibleGRColumns && visibleGRColumns.length > 0 && visibleGRColumns.map((col, idx) => (
+                                            visibleDColumns && visibleDColumns.length > 0 && visibleDColumns.map((col, idx) => (
                                                 <Column
                                                     key={nanoid(6)}
                                                     columnKey={nanoid(6)}
@@ -1456,8 +1447,8 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                                     </DataTable>
                                 ) : (
                                     <DataTable
-                                        ref={goodsReceiptPOT}
-                                        value={goodsReceiptPOData}
+                                        ref={deliveryT}
+                                        value={deliveryData}
                                         className="p-datatable-gridlines"
                                         scrollable
                                         scrollHeight='600px'
@@ -1469,11 +1460,10 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                                         dataKey="DocNum"
                                         stripedRows={false}
                                         selectAll={selectionAll}
-                                        selection={selectedGoodsReceiptPO}
+                                        selection={selectedDelivery}
                                         onSelectionChange={(e) => {
-                                            console.log("Có dô đây hẻn")
                                             const currentValue = e.value;
-                                            setSelectedGoodsReceiptPO(currentValue)
+                                            setSelectedDelivery(currentValue)
                                             setSelectionAll(currentValue.length === totalRecord)
                                         }}
                                         columnResizeMode="expand"
@@ -1482,7 +1472,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                                         loading={loading}
                                         responsiveLayout="scroll"
                                         sortMode="multiple"
-                                        filters={grFilters}
+                                        filters={deliveryFilters}
                                         removableSort
                                         emptyMessage={capitalizeWords(t("empty"))}
                                         header={header}
@@ -1493,7 +1483,7 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                                         <Column key={nanoid(6)} columnKey={nanoid(6)} resizeable={false} reorderable={false} frozen selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
                                         <Column key={nanoid(6)} columnKey={nanoid(6)} resizeable={false} reorderable={false} frozen header={capitalizeWords(tG("actions"))} headerStyle={{ width: '3rem' }} className='text-center' body={actionBodyTemplate} />
                                         {
-                                            visibleGRColumns && visibleGRColumns.length > 0 && visibleGRColumns.map((col, idx) => (
+                                            visibleDColumns && visibleDColumns.length > 0 && visibleDColumns.map((col, idx) => (
                                                 <Column
                                                     key={nanoid(6)}
                                                     columnKey={nanoid(6)}
@@ -1537,10 +1527,10 @@ const CGoodsReceiptPOList = ({ initialData }) => {
                     breakpoints={{ '960px': '75vw', '641px': '100vw' }}
                 >
                     <div clasName="m-0 p-2 pt-1">
-                        <ListBox filter ref={filterListRef} listStyle={{ height: '400px' }} multiple value={visibleGRColumns} itemTemplate={filterOptionTemplate} onChange={onColumnToggle} options={goodsReceiptPOColumns} optionLabel="header" className="w-full mt-3" />
+                        <ListBox filter ref={filterListRef} listStyle={{ height: '400px' }} multiple value={visibleDColumns} itemTemplate={filterOptionTemplate} onChange={onColumnToggle} options={deliveryColumns} optionLabel="header" className="w-full mt-3" />
                     </div>
                 </Dialog>
-                <GRPOHelper visible={isHelperOpen} onHide={() => setIsHelperOpen(false)} />
+                {/* <DHelper visible={isHelperOpen} onHide={() => setIsHelperOpen(false)} /> */}
                 {isExporting && (
                     <>
                         <div className="absolute top-0 left-0 w-full z-50 h-full backdrop-blur-0 bg-[rgba(202,202,202,0.65)]"></div>
@@ -1553,5 +1543,5 @@ const CGoodsReceiptPOList = ({ initialData }) => {
 };
 
 
-export default withAuth(CGoodsReceiptPOList);
-// export default GoodsReceiptPO;
+export default withAuth(CDeliveryList);
+// export default Delivery;
